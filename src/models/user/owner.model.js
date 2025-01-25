@@ -19,7 +19,7 @@ const ownerSchema = new mongoose.Schema({
     profile_image: {
         type: String
     }
-});
+}, { timestamps: true });
 
 
 const Owner = mongoose.model('Owner', ownerSchema);
