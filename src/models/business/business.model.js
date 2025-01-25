@@ -39,6 +39,10 @@ const businessSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    price_range_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PriceRange',
     }
 }, { timestamps: true });
 
