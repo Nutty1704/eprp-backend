@@ -17,7 +17,8 @@ const ownerSchema = new mongoose.Schema({
         required: true
     },
     profile_image: {
-        type: String
+        type: String,
+        default: null
     }
 }, { timestamps: true });
 

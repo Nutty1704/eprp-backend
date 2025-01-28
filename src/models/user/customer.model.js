@@ -13,14 +13,16 @@ const customerSchema = new mongoose.Schema({
         required: true
     },
     bio: {
-        type: String
+        type: String,
+        default: ""
     },
     review_count: {
         type: Number,
         default: 0
     },
     profile_image: {
-        type: String
+        type: String,
+        default: null
     },
 }, { timestamps: true });
 

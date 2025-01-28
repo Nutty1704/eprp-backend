@@ -10,6 +10,7 @@ import passport from './lib/passport.js';
 // Router imports
 import authRouter from './routes/auth.route.js';
 import mongoose from 'mongoose';
+import errorHandler from './middlewares/error-handler.middleware.js';
 
 
 dotenv.config(); // Load environment variables from .env file
@@ -46,6 +47,9 @@ app.use(passport.session());
 // Routes
 app.use('/api/auth', authRouter);
 
+
+// Error handling middleware
+app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
