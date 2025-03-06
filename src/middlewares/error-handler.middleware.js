@@ -5,6 +5,7 @@ const errorHandler = (err, req, res, next) => {
         // Handle custom errors
         return res.status(err.status).json({
             success: false,
+            error: true,
             message: err.message,
         });
     }
@@ -13,14 +14,16 @@ const errorHandler = (err, req, res, next) => {
         const messages = parseValidationErrors(err);
         return res.status(400).json({
             success: false,
+            error: true,
             errors: messages,
         });
     }
 
     // Handle other errors (e.g., Mongoose errors, generic server errors)
-    console.error(err); // Log the error for debugging
+    console.error(err);
     res.status(500).json({
         success: false,
+        error: true,
         message: "An internal server error occurred",
     });
 };
