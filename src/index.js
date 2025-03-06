@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
+import cors from 'cors';
 
 import { connectDB } from './lib/mongodb.js'
 import { connectCloudinary } from './lib/cloudinary.js';
@@ -34,7 +35,8 @@ app.use(
             maxAge: 1000 * 60 * 60 * 24 * 3, // 3 days
         },
         store: MongoStore.create({
-            client: mongoose.connection.getClient()
+            client: mongoose.connection.getClient(),
+            ttl: 1000 * 60 * 60 * 24 * 3, // Delete sessions older than 3 days
         })
     })
 );
@@ -43,6 +45,13 @@ app.use(
 // Initialize passport js
 app.use(passport.initialize());
 app.use(passport.session());
+
+// CORS middleware
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    methods: "GET,POST,PUT,DELETE",
+    credentials: true,
+}));
 
 // Routes
 app.use('/api/auth', authRouter);

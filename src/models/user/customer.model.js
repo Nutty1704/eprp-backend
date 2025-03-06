@@ -10,7 +10,7 @@ const customerSchema = new mongoose.Schema({
     },
     name: {
         type: String,
-        required: true
+        default: "",
     },
     bio: {
         type: String,

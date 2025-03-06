@@ -1,5 +1,6 @@
 import Customer from "../models/user/customer.model.js";
 import Owner from "../models/user/owner.model.js";
+import User from "../models/user/user.model.js";
 import { InvalidRoleError } from "./error-utils.js";
 
 // Helper function to create a role-specific entity
@@ -7,13 +8,15 @@ export const createRoleEntity = async (role, user, body) => {
     switch (role) {
 
         case "customer":
-            const { name, bio = "" } = body;
+            const { name = "", bio = "" } = body;
             const customer = new Customer({
                 user_id: user._id,
                 name,
                 bio,
             });
             await customer.save();
+
+            User.updateOne({ _id: user._id }, { $set: { "roles.customer": true } });
             break;
 
         case "owner":
@@ -24,6 +27,8 @@ export const createRoleEntity = async (role, user, body) => {
                 lname,
             });
             await owner.save();
+
+            User.updateOne({ _id: user._id }, { $set: { "roles.owner": true } });
             break;
 
         default:
@@ -41,12 +46,10 @@ export const alreadyExists = async (user, role) => {
     switch (role) {
 
         case "customer":
-            const customer = await Customer.findOne({ user_id: user._id });
-            return customer ? true : false;
+            return !!user.roles.customer;
 
         case "owner":
-            const owner = await Owner.findOne({ user_id: user._id });
-            return owner ? true : false;
+            return !!user.roles.owner;
         
         default:
             throw InvalidRoleError.create();

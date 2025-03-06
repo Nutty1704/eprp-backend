@@ -20,4 +20,3 @@ export const isOwner = (req, res, next) => {
     req.owner = req.user.roles.owner; // Directly attach the owner role
     next();
 };
-
