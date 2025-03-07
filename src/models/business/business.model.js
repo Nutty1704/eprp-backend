@@ -24,6 +24,18 @@ const businessSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    foodRating: {
+        type: Number,
+        default: 0,
+    },
+    serviceRating: {
+        type: Number,
+        default: 0
+    },
+    ambienceRating: {
+        type: Number,
+        default: 0
+    },
     review_count: {
         type: Number,
         default: 0
@@ -47,6 +59,6 @@ const businessSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 
-const productModel = mongoose.model('Product', businessSchema);
+const businessModel = mongoose.model('Business', businessSchema);
 
-export default productModel;
+export default businessModel;
