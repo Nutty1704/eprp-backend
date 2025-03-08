@@ -1,16 +1,24 @@
 import multer from 'multer';
-import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from '@fluidjs/multer-cloudinary';
+import path from 'path';
+import fs from 'fs';
 
-const imgStorage = new CloudinaryStorage({
-    cloudinary,
-    params: {
-        folder: 'images',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'gif'],
+const imgStorage = new multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadPath = path.join(process.cwd(), 'tmp', 'images');
+
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+
+        cb(null, uploadPath);
     },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' +  uniqueSuffix + '.' + file.originalname.split('.').pop());
+    }
 });
 
-const uploadImg = multer({
+export const uploadImg = multer({
     storage: imgStorage,
     limits: {
         fileSize: 1024 * 1024 * 10, // 10 MB
@@ -23,6 +31,3 @@ const uploadImg = multer({
         cb(null, true);
     }
 });
-
-
-export default uploadImg;

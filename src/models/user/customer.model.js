@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import { deleteFromCloudinary } from '../../lib/cloudinary.js';
+import { cloudinaryFolder as customerFolder, getPublicId } from '../../config/cusotmer.config.js';
 
 
 const customerSchema = new mongoose.Schema({
@@ -26,6 +28,17 @@ const customerSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
+
+customerSchema.post('findOneAndDelete', async function (doc) {
+    if (doc && doc.profile_image) {
+        try {
+            const publicId = `${customerFolder}/${getPublicId(doc)}`;
+            await deleteFromCloudinary(publicId);
+        } catch (error) {
+            console.error(`Failed to delete Cloudinary image for customer ${doc._id}:`, error);
+        }
+    }
+});
 
 const Customer = mongoose.model('Customer', customerSchema);
 
