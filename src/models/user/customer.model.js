@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { deleteFromCloudinary } from '../../lib/cloudinary.js';
-import { cloudinaryFolder as customerFolder, getPublicId } from '../../config/cusotmer.config.js';
+import { cloudinaryFolder as customerFolder, getPublicId } from '../../config/customer.config.js';
 
 
 const customerSchema = new mongoose.Schema({

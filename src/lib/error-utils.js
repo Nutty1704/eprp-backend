@@ -58,3 +58,17 @@ export class NotAuthenticatedError extends ErrorWithStatus {
         return new NotAuthenticatedError(message, status);
     }
 }
+
+
+export class InvalidDataError extends ErrorWithStatus {
+    constructor (message) {
+        super(message, 400);
+    }
+}
+
+
+export class EntityNotFoundError extends ErrorWithStatus {
+    constructor(message) {
+        super(message, 404);
+    }
+}
