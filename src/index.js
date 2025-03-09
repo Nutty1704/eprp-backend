@@ -22,6 +22,8 @@ app.get("/health", async (req, res) => {
     res.send({ message: "health OK!" });
 });
 
+app.use("/api/my/user", myUserRoute);
+
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
