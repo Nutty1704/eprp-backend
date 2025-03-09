@@ -1,8 +1,8 @@
 import { NotAuthenticatedError, InvalidRoleError } from "../lib/error-utils.js";
 
 export const isAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) return next();
-    throw NotAuthenticatedError.create();
+    if (!req.isAuthenticated()) throw NotAuthenticatedError.create();
+    next();
 };
 
 export const isCustomer = (req, res, next) => {

@@ -10,8 +10,12 @@ import passport from './lib/passport.js';
 
 // Router imports
 import authRouter from './routes/auth.route.js';
+import customerRouter from './routes/customer.route.js';
+import reviewRouter from './routes/review.route.js';
+
 import mongoose from 'mongoose';
 import errorHandler from './middlewares/error-handler.middleware.js';
+import { isAuthenticated, isCustomer } from './middlewares/auth.middleware.js';
 
 
 dotenv.config(); // Load environment variables from .env file
@@ -55,6 +59,8 @@ app.use(cors({
 
 // Routes
 app.use('/api/auth', authRouter);
+app.use('/api/customer', isCustomer, customerRouter);
+app.use('/api/reviews', isAuthenticated, reviewRouter);
 
 
 // Error handling middleware

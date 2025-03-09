@@ -63,3 +63,20 @@ export const generateCloudinaryUrl = (publicId, options = {}) => {
         throw new Error(`Cloudinary URL generation failed: ${error.message}`);
     }
 };
+
+export const extractPublicIdFromUrl = (url, depth = 2) => {
+    if (!url) {
+        return null;
+    }
+
+    const parts = url.split('/');
+
+    if (parts.length < depth + 1) {
+        return null
+    }
+
+    const publicId = parts.slice(parts.length - depth).join('/');
+
+    // Remove file extension (e.g., .jpg, .png, etc.)
+    return publicId.replace(/\.[^/.]+$/, '');
+};
