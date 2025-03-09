@@ -25,16 +25,10 @@ export const updateCustomer = async (req, res, next) => {
     };
 
     if (removeProfileImage) {
-        if (req.customer.profile_image) {
-            const publicId = customerFolder + '/' + getPublicId(req.customer);
+        const removed = await removeProfileImageFromCloudinary(req.customer, next);
 
-            try {
-                await deleteFromCloudinary(publicId);
-
-                updates.profile_image = null;
-            } catch (error) {
-                return next(new Error('Failed to delete profile image from Cloudinary.'));
-            }
+        if (removed) {
+            updates.profile_image = null;
         }
     }
 
@@ -60,6 +54,8 @@ export const updateCustomer = async (req, res, next) => {
 
 
 export const deleteCustomer = async (req, res, next) => {
+    await removeProfileImageFromCloudinary(req.customer, next);
+
     await Customer.findByIdAndDelete(req.customer._id);
 
     if (!req.user.roles.owner) {
@@ -67,4 +63,19 @@ export const deleteCustomer = async (req, res, next) => {
     }
 
     logout(req, res, next);
+}
+
+
+// Helper function to remove profile image
+const removeProfileImageFromCloudinary = async (customer, next) => {
+    if (customer.profile_image) {
+        const publicId = customerFolder + '/' + getPublicId(customer);
+
+        try {
+            await deleteFromCloudinary(publicId);
+            return true;
+        } catch (error) {
+            return next(new Error('Failed to delete profile image from Cloudinary.'));
+        }
+    }
 }
