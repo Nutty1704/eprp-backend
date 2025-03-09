@@ -3,7 +3,7 @@ import { InvalidDataError } from "../lib/error-utils.js"
 import Customer from "../models/user/customer.model.js"
 import User from "../models/user/user.model.js"
 import { logout } from "./auth.controller.js"
-import { cloudinaryFolder as customerFolder, getPublicId } from '../config/customer.config.js'
+import { cloudinaryFolder as customerFolder, getFullId, getPublicId } from '../config/customer.config.js'
 
 
 export const getCustomer = (req, res, next) => {
@@ -69,7 +69,7 @@ export const deleteCustomer = async (req, res, next) => {
 // Helper function to remove profile image
 const removeProfileImageFromCloudinary = async (customer, next) => {
     if (customer.profile_image) {
-        const publicId = customerFolder + '/' + getPublicId(customer);
+        const publicId = getFullId(customer);
 
         try {
             await deleteFromCloudinary(publicId);
