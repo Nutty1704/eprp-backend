@@ -1,15 +1,13 @@
 import mongoose from "mongoose";
-import User from "./User";
+import User from "./user.model.js";
 
 const CustomerSchema = new mongoose.Schema(
     {
-        fname: {
+        name: {
             type: String,
-            required: true,
         },
-        lname: {
+        bio: {
             type: String,
-            required: true,
         },
         profile_image: {
             type: String,

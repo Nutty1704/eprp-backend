@@ -11,15 +11,11 @@ const userSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
-        name: {
-            type: String, 
-        },
         phone: {
             type: String,
         },
         role: {
             type: String,
-            required: true,
             enum: ["Customer", "Owner"], 
         },
     },

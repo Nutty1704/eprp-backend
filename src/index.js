@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from "cors";
 import mongoose from 'mongoose';
+import userRoute from './routes/user.route.js'
 
 dotenv.config(); // Load environment variables from .env file
 
@@ -22,7 +23,7 @@ app.get("/health", async (req, res) => {
     res.send({ message: "health OK!" });
 });
 
-app.use("/api/my/user", myUserRoute);
+app.use("/api/my/user", userRoute);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

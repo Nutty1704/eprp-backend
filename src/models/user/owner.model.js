@@ -1,15 +1,13 @@
 import mongoose from "mongoose";
-import User from "./User";
+import User from "./user.model.js";
 
 const OwnerSchema = new mongoose.Schema(
     {
         fname: {
             type: String,
-            required: true,
         },
         lname: {
             type: String,
-            required: true,
         },
         profile_image: {
             type: String,
