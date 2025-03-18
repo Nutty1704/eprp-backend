@@ -63,12 +63,12 @@ export const login = (req, res, next) => {
 
     passport.authenticate("local", (err, user, info) => {
         if (err) return next(err);
-        if (!user) return res.status(401).json({ success: false, message: info.message });
+        if (!user) return next(new NotAuthenticatedError("Invalid credentials."));
 
         if (role) {
             const roleEntity = user.roles?.[role.toLowerCase()];
             if (!roleEntity) {
-                return next(UserNotFoundError.create("User does not have the requested role."));
+                return next(new UserNotFoundError("User does not have the requested role."));
             }
         }
 

@@ -16,7 +16,7 @@ export const createRoleEntity = async (role, user, body) => {
             });
             await customer.save();
 
-            User.updateOne({ _id: user._id }, { $set: { "roles.customer": true } });
+            await User.updateOne({ _id: user._id }, { $set: { "roles.customer": true } });
             break;
 
         case "owner":
@@ -28,7 +28,7 @@ export const createRoleEntity = async (role, user, body) => {
             });
             await owner.save();
 
-            User.updateOne({ _id: user._id }, { $set: { "roles.owner": true } });
+            await User.updateOne({ _id: user._id }, { $set: { "roles.owner": true } });
             break;
 
         default:
@@ -46,10 +46,10 @@ export const alreadyExists = async (user, role) => {
     switch (role) {
 
         case "customer":
-            return !!user.roles.customer;
+            return !!user.roles.get("customer");
 
         case "owner":
-            return !!user.roles.owner;
+            return !!user.roles.get("owner");
         
         default:
             throw InvalidRoleError.create();

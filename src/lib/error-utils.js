@@ -28,8 +28,8 @@ export class InvalidRoleError extends ErrorWithStatus {
 
 
 export class UserNotFoundError extends ErrorWithStatus {
-    constructor() {
-        super("User not found.", 404);
+    constructor(message = "User not found.") {
+        super(message, 404);
     }
 
     static create() {
@@ -50,7 +50,7 @@ export class UserAlreadyExistsError extends ErrorWithStatus {
 
 
 export class NotAuthenticatedError extends ErrorWithStatus {
-    constructor(message, status) {
+    constructor(message, status = 401) {
         super(message, status);
     }
 
