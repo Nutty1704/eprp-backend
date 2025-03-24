@@ -18,3 +18,5 @@ router.put(
   uploadImg.single('profile_image'),
   businessController.updateMyBusiness
 );
+
+export default router;
