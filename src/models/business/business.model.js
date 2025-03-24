@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import MenuItem from "./menu_item.model";
 
 
 const businessSchema = new mongoose.Schema({
@@ -55,7 +56,10 @@ const businessSchema = new mongoose.Schema({
     price_range_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'PriceRange',
-    }
+    },
+    menuItems: [MenuItem],
+    cuisines: [{ type: String, required: true }],
+
 }, { timestamps: true });
 
 
