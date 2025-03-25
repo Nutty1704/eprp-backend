@@ -8,6 +8,12 @@ const router = express.Router();
 // Apply owner authentication middleware to all business routes
 router.use(isOwner);
 
+// Configure multer for multiple file uploads
+const multiUpload = uploadImg.fields([
+  { name: 'profile_image', maxCount: 1 },
+  { name: 'menuItemImage', maxCount: 1 }
+]);
+
 // Get all businesses for the logged-in owner
 router.get("/", businessController.getMyBusinesses);
 
@@ -17,14 +23,14 @@ router.get("/:businessId", businessController.getMyBusinessById);
 // Create a new business
 router.post(
   "/",
-  uploadImg.single('image'),
+  multiUpload,
   businessController.createBusiness
 );
 
 // Update a business
 router.put(
   "/:businessId",
-  uploadImg.single('image'),
+  multiUpload,
   businessController.updateBusiness
 );
 

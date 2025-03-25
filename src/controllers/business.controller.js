@@ -164,10 +164,36 @@ export const updateBusiness = async (req, res) => {
       business.cuisines = [];
     }
 
-    // Handle image upload if exists
-    if (req.file) {
-      const imageUrl = await uploadImage(req.file);
+    // Parse menu items if provided
+    if (req.body.menuItems) {
+      try {
+        const menuItems = JSON.parse(req.body.menuItems);
+        
+        // Ensure menu items is always an array
+        if (Array.isArray(menuItems)) {
+          business.menuItems = menuItems;
+        }
+      } catch (e) {
+        console.error("Error parsing menu items:", e);
+      }
+    }
+
+    // Handle business profile image upload
+    if (req.files?.profile_image || req.file) {
+      const imageFile = req.files?.profile_image?.[0] || req.file;
+      const imageUrl = await uploadImage(imageFile);
       business.imageUrl = imageUrl;
+    }
+
+    // Handle menu item image upload
+    if (req.files?.menuItemImage || req.body.menuItemImage) {
+      const imageFile = req.files?.menuItemImage?.[0] || req.body.menuItemImage;
+      const menuItemIndex = parseInt(req.body.menuItemImageIndex);
+      
+      if (!isNaN(menuItemIndex) && imageFile && business.menuItems[menuItemIndex]) {
+        const imageUrl = await uploadImage(imageFile);
+        business.menuItems[menuItemIndex].imageUrl = imageUrl;
+      }
     }
 
     business.lastUpdated = new Date();
