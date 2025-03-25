@@ -1,5 +1,4 @@
 import Business from "../models/business/business.model.js";
-import Owner from "../models/user/owner.model.js";
 import cloudinary from "cloudinary";
 
 // Get all businesses for the logged-in owner
@@ -7,6 +6,8 @@ export const getMyBusinesses = async (req, res) => {
   try {
     // Get the owner document from the owner middleware
     const owner = req.owner;
+    
+    // Find businesses with this owner
     const businesses = await Business.find({ owner_id: owner._id });
     
     res.status(200).json(businesses);
@@ -43,9 +44,49 @@ export const createBusiness = async (req, res) => {
   try {
     const owner = req.owner;
     
+    // Prepare business data
+    const businessData = {
+      name: req.body.businessName || req.body.name,
+      businessName: req.body.businessName || req.body.name,
+      description: req.body.description || "",
+      email: req.body.email || "",
+      phone: req.body.phone || "",
+      website: req.body.website || "",
+      address: req.body.address,
+      owner_id: owner._id
+    };
+    
+    // Parse opening hours if provided
+    if (req.body.openingHours) {
+      try {
+        businessData.openingHours = JSON.parse(req.body.openingHours);
+      } catch (e) {
+        console.error("Error parsing opening hours:", e);
+      }
+    }
+    
+    // Parse cuisines if provided
+    if (req.body.cuisines) {
+      try {
+        businessData.cuisines = Array.isArray(req.body.cuisines) 
+          ? req.body.cuisines 
+          : JSON.parse(req.body.cuisines);
+        
+        // Ensure cuisines is always an array
+        if (!Array.isArray(businessData.cuisines)) {
+          businessData.cuisines = [];
+        }
+      } catch (e) {
+        console.error("Error parsing cuisines:", e);
+        businessData.cuisines = [];
+      }
+    } else {
+      businessData.cuisines = [];
+    }
+    
     // Check if a business with this name already exists for this owner
     const existingBusiness = await Business.findOne({ 
-      name: req.body.name,
+      name: businessData.name,
       owner_id: owner._id 
     });
 
@@ -54,24 +95,19 @@ export const createBusiness = async (req, res) => {
     }
 
     // Handle image upload if exists
-    let imageUrl = '';
     if (req.file) {
-      imageUrl = await uploadImage(req.file);
+      const imageUrl = await uploadImage(req.file);
+      businessData.imageUrl = imageUrl;
     }
 
     // Create new business
-    const business = new Business({
-      ...req.body,
-      owner_id: owner._id,
-      imageUrl: imageUrl
-    });
-    
+    const business = new Business(businessData);
     await business.save();
     
     res.status(201).json(business);
   } catch (error) {
     console.error("Error creating business:", error);
-    res.status(500).json({ message: "Error creating business" });
+    res.status(500).json({ message: "Error creating business", error: error.message });
   }
 };
 
@@ -92,12 +128,41 @@ export const updateBusiness = async (req, res) => {
     }
 
     // Update business fields
-    const updates = req.body;
-    Object.keys(updates).forEach((key) => {
-      if (updates[key] !== undefined) {
-        business[key] = updates[key];
+    if (req.body.businessName) business.businessName = req.body.businessName;
+    if (req.body.name) business.name = req.body.name;
+    if (req.body.description !== undefined) business.description = req.body.description;
+    if (req.body.email !== undefined) business.email = req.body.email;
+    if (req.body.phone !== undefined) business.phone = req.body.phone;
+    if (req.body.website !== undefined) business.website = req.body.website;
+    if (req.body.address) business.address = req.body.address;
+
+    // Parse opening hours if provided
+    if (req.body.openingHours) {
+      try {
+        business.openingHours = JSON.parse(req.body.openingHours);
+      } catch (e) {
+        console.error("Error parsing opening hours:", e);
       }
-    });
+    }
+    
+    // Parse cuisines if provided
+    if (req.body.cuisines) {
+      try {
+        business.cuisines = Array.isArray(req.body.cuisines) 
+          ? req.body.cuisines 
+          : JSON.parse(req.body.cuisines);
+        
+        // Ensure cuisines is always an array
+        if (!Array.isArray(business.cuisines)) {
+          business.cuisines = [];
+        }
+      } catch (e) {
+        console.error("Error parsing cuisines:", e);
+      }
+    } else {
+      // Empty array if no cuisines provided (to clear existing cuisines)
+      business.cuisines = [];
+    }
 
     // Handle image upload if exists
     if (req.file) {
@@ -111,7 +176,7 @@ export const updateBusiness = async (req, res) => {
     res.status(200).json(business);
   } catch (error) {
     console.error("Error updating business:", error);
-    res.status(500).json({ message: "Error updating business" });
+    res.status(500).json({ message: "Error updating business", error: error.message });
   }
 };
 
