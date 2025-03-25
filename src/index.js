@@ -12,7 +12,8 @@ import passport from './lib/passport.js';
 import authRouter from './routes/auth.route.js';
 import customerRouter from './routes/customer.route.js';
 import reviewRouter from './routes/review.route.js';
-import businessRouter from './routes/business.route.js'
+import businessRouter from './routes/business.route.js';
+import searchRouter from './routes/search.route.js';
 
 import mongoose from 'mongoose';
 import errorHandler from './middlewares/error-handler.middleware.js';
@@ -63,6 +64,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/customer', isCustomer, customerRouter);
 app.use('/api/reviews', isAuthenticated, reviewRouter);
 app.use('/api/business', businessRouter);
+app.use('/api/search', searchRouter);
 
 
 // Error handling middleware
