@@ -1,6 +1,18 @@
 import mongoose from "mongoose";
-import MenuItem from "./menu_item.model";
+import MenuItem from "./menu_item.model.js";
 
+
+const menuItemSchema = new mongoose.Schema({
+    _id: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      default: () => new mongoose.Types.ObjectId(),
+    },
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+  },
+  { timestamps: true }
+  );
 
 const businessSchema = new mongoose.Schema({
     name: {
@@ -57,7 +69,7 @@ const businessSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'PriceRange',
     },
-    menuItems: [MenuItem],
+    menuItems: [menuItemSchema],
     cuisines: [{ type: String, required: true }],
 
 }, { timestamps: true });
