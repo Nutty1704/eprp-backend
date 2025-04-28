@@ -2,6 +2,7 @@ import Business from "../../models/business/business.model.js"
 import Review from "../../models/review/review.model.js"
 import ReviewUpvote from "../../models/review/review_upvote.model.js"
 import Customer from "../../models/user/customer.model.js"
+import { EntityNotFoundError, InvalidDataError } from "../error-utils.js";
 
 export const getFilteredReviews = async (filter, query) => {
     const { sortBy = "createdAt", order = "desc", minRating, maxRating, limit = 10, page = 1 } = query;
@@ -154,3 +155,15 @@ export const populateUpvotes = async (reviews, customer_id) => {
     }
 };
 
+
+export const isValidOwner = async (ownerId, businessId) => {
+    const business = await Business.findById(businessId);
+
+    if (!business) {
+        throw new EntityNotFoundError("Business not found.");
+    }
+
+    if (business.owner_id !== ownerId) {
+        throw new InvalidDataError("You are not the owner of this business.");
+    }
+}

@@ -6,7 +6,13 @@ import User from "../models/user/user.model.js";
 
 
 export const getAuthStatus = async (req, res, next) => {
-    if (req.isAuthenticated() && req.user) {
+    const { role } = req.query;
+
+    if (!role || !isValidUserRole(role)) {
+        return next(new InvalidRoleError());
+    }
+
+    if (req.isAuthenticated() && req.user && req.user.roles[role]) {
         return res.status(200).json({
             isAuthenticated: true,
             user: {

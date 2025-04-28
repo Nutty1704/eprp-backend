@@ -61,7 +61,7 @@ app.use(cors({
 // Routes
 app.use('/api/auth', authRouter);
 app.use('/api/customer', isCustomer, customerRouter);
-app.use('/api/reviews', isAuthenticated, reviewRouter);
+app.use('/api/reviews', reviewRouter);
 app.use('/api/business', businessRouter);
 
 

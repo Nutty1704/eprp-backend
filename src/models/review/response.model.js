@@ -20,7 +20,7 @@ const responseSchema = new mongoose.Schema({
 
 
 // Ensure the business_id and review_id are unique as a pair
-responseSchema.index({ business_id: 1, review_id: 1 }, { unique: true });
+responseSchema.index({ review_id: 1 }, { unique: true });
 
 const Response = mongoose.model('Response', responseSchema);
 

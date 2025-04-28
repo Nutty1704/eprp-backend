@@ -1,8 +1,9 @@
 import Review from "../models/review/review.model.js"
+import Response from "../models/review/response.model.js"
 import { InvalidDataError, EntityNotFoundError } from '../lib/error-utils.js'
 import ReviewUpvote from "../models/review/review_upvote.model.js"
 import {
-    getFilteredReviews, populateUpvotes,
+    getFilteredReviews, isValidOwner, populateUpvotes,
     postCreateReview, postDeleteReview,
     postUpdateReview
 } from "../lib/db/review-utils.js"
@@ -94,6 +95,47 @@ export const createReview = async (req, res, next) => {
 
 }
 
+export const createResponse = async (req, res, next) => {
+    try {
+        const { reviewId, text } = req.body;
+        const ownerId = req.owner._id;
+
+        console.log(req.owner);
+
+        if (!reviewId) {
+            throw new InvalidDataError("Missing reviewId.");
+        }
+
+        if (!text) {
+            throw new InvalidDataError("Missing text.");
+        }
+
+        const review = await Review.findById(reviewId);
+
+        if (!review) {
+            throw new EntityNotFoundError("Review not found.");
+        }
+
+        await isValidOwner(ownerId, review.businessId);
+
+        const responseExists = await Response.exists({ review_id: review._id });
+
+        let data;
+        if (responseExists) {
+            data = await Response.findOneAndUpdate(
+                { review_id: review._id },
+                { $set: { text } },
+                { new: true }
+            );
+        } else {
+            data = await Response.create({ review_id: review._id, business_id: review.businessId, text });
+        }
+
+        res.status(200).json({ success: true, error: false, data });
+    } catch (error) {
+        next(error);
+    }
+}
 export const updateReview = async (req, res, next) => {
     try {
         const customerId = req.customer._id;
