@@ -1,5 +1,7 @@
 import Business from "../models/business/business.model.js";
 import cloudinary from "cloudinary";
+import fs from "fs/promises";
+import mongoose from "mongoose";
 
 // Get all businesses for the logged-in owner
 export const getMyBusinesses = async (req, res) => {
@@ -128,7 +130,10 @@ export const updateBusiness = async (req, res) => {
     }
 
     // Update business fields
-    if (req.body.businessName) business.businessName = req.body.businessName;
+    if (req.body.businessName) {
+      business.businessName = req.body.businessName;
+      business.name = req.body.businessName;
+    }
     if (req.body.name) business.name = req.body.name;
     if (req.body.description !== undefined) business.description = req.body.description;
     if (req.body.email !== undefined) business.email = req.body.email;
@@ -167,7 +172,14 @@ export const updateBusiness = async (req, res) => {
     // Parse menu items if provided
     if (req.body.menuItems) {
       try {
-        const menuItems = JSON.parse(req.body.menuItems);
+        let menuItems = JSON.parse(req.body.menuItems);
+
+        menuItems = menuItems.map(item => {
+          if (!item._id || typeof item._id !== 'string' || item._id.startsWith('temp-')) {
+            return { ...item, _id: new mongoose.Types.ObjectId() };
+          }
+          return item;
+        });
         
         // Ensure menu items is always an array
         if (Array.isArray(menuItems)) {
@@ -230,9 +242,15 @@ export const deleteBusiness = async (req, res) => {
 
 // Helper function for image upload
 const uploadImage = async (file) => {
-  const image = file;
-  const base64Image = Buffer.from(image.buffer).toString("base64");
-  const dataURI = `data:${image.mimetype};base64,${base64Image}`;
+  if (!file) {
+    throw new Error("No file provided");
+  }
+
+  // Read the file from disk
+  const fileData = await fs.readFile(file.path);
+
+  const base64Image = fileData.toString("base64");
+  const dataURI = `data:${file.mimetype};base64,${base64Image}`;
 
   const uploadResponse = await cloudinary.v2.uploader.upload(dataURI);
   return uploadResponse.url;
