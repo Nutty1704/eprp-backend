@@ -20,14 +20,12 @@ export const getMyBusinesses = async (req, res) => {
 };
 
 // Get a specific business by ID (ensuring it belongs to the logged-in owner)
-export const getMyBusinessById = async (req, res) => {
+export const getBusinessById = async (req, res) => {
   try {
     const { businessId } = req.params;
-    const owner = req.owner;
     
     const business = await Business.findOne({ 
       _id: businessId,
-      owner_id: owner._id 
     });
     
     if (!business) {
@@ -258,7 +256,7 @@ const uploadImage = async (file) => {
 
 export default {
   getMyBusinesses,
-  getMyBusinessById,
+  getBusinessById,
   createBusiness,
   updateBusiness,
   deleteBusiness,

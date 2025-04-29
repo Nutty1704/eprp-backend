@@ -5,9 +5,6 @@ import { isOwner } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-// Apply owner authentication middleware to all business routes
-router.use(isOwner);
-
 // Configure multer for multiple file uploads
 const multiUpload = uploadImg.fields([
   { name: 'profile_image', maxCount: 1 },
@@ -15,14 +12,15 @@ const multiUpload = uploadImg.fields([
 ]);
 
 // Get all businesses for the logged-in owner
-router.get("/", businessController.getMyBusinesses);
+router.get("/", isOwner, businessController.getMyBusinesses);
 
 // Get a specific business by ID
-router.get("/:businessId", businessController.getMyBusinessById);
+router.get("/:businessId", businessController.getBusinessById);
 
 // Create a new business
 router.post(
   "/",
+  isOwner,
   multiUpload,
   businessController.createBusiness
 );
@@ -30,11 +28,12 @@ router.post(
 // Update a business
 router.put(
   "/:businessId",
+  isOwner,
   multiUpload,
   businessController.updateBusiness
 );
 
 // Delete a business
-router.delete("/:businessId", businessController.deleteBusiness);
+router.delete("/:businessId", isOwner, businessController.deleteBusiness);
 
 export default router;
