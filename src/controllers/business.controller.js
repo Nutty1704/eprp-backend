@@ -238,6 +238,69 @@ export const deleteBusiness = async (req, res) => {
   }
 };
 
+export const getPopularBusinesses = async (req, res) => {
+  try {
+    // Get query parameters or set defaults
+    const limit = parseInt(req.query.limit) || 6; // Default to 6 businesses
+    const ratingWeight = 0.7; // Weight for rating (W1)
+    const reviewCountWeight = 0.3; // Weight for review count (W2)
+
+    // --- Aggregation Pipeline ---
+    const pipeline = [
+      // Add the popularity score field
+      {
+        $addFields: {
+          // Calculate log(review_count + 1) to handle 0 reviews and normalize
+          logReviewCount: { $ln: { $add: ["$review_count", 1] } }, 
+        }
+      },
+      {
+         $addFields: {
+            popularityScore: {
+                $add: [
+                  { $multiply: ["$rating", ratingWeight] },
+                  { $multiply: ["$logReviewCount", reviewCountWeight] }
+                ]
+            }
+         }
+      },
+      // Sort by the calculated popularity score (descending)
+      {
+        $sort: {
+          popularityScore: -1
+        }
+      },
+      // Limit the number of results
+      {
+        $limit: limit
+      },
+      // Project only necessary fields (improves performance)
+      {
+        $project: {
+            // Include fields needed by RestaurantCard
+            name: 1,
+            address: 1,
+            rating: 1,
+            review_count: 1,
+            imageUrl: 1,
+            cuisines: 1,
+            openingHours: 1, 
+            _id: 1,
+        }
+      }
+    ];
+
+    // Execute aggregation
+    const popularBusinesses = await Business.aggregate(pipeline);
+
+    res.status(200).json(popularBusinesses);
+
+  } catch (error) {
+    console.error("Error fetching popular businesses:", error);
+    res.status(500).json({ message: "Error fetching popular businesses" });
+  }
+};
+
 // Helper function for image upload
 const uploadImage = async (file) => {
   if (!file) {
@@ -260,4 +323,5 @@ export default {
   createBusiness,
   updateBusiness,
   deleteBusiness,
+  getPopularBusinesses,
 };
