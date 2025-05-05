@@ -10,10 +10,10 @@ export const getMyBusinesses = async (req, res) => {
   try {
     // Get the owner document from the owner middleware
     const owner = req.owner;
-    
+
     // Find businesses with this owner
     const businesses = await Business.find({ owner_id: owner._id });
-    
+
     res.status(200).json(businesses);
   } catch (error) {
     console.error("Error fetching businesses:", error);
@@ -25,15 +25,15 @@ export const getMyBusinesses = async (req, res) => {
 export const getBusinessById = async (req, res) => {
   try {
     const { businessId } = req.params;
-    
-    const business = await Business.findOne({ 
+
+    const business = await Business.findOne({
       _id: businessId,
     });
-    
+
     if (!business) {
       return res.status(404).json({ message: "Business not found" });
     }
-    
+
     res.status(200).json(business);
   } catch (error) {
     console.error("Error fetching business:", error);
@@ -45,7 +45,7 @@ export const getBusinessById = async (req, res) => {
 export const createBusiness = async (req, res) => {
   try {
     const owner = req.owner;
-    
+
     // Prepare business data
     const businessData = {
       name: req.body.businessName || req.body.name,
@@ -57,7 +57,7 @@ export const createBusiness = async (req, res) => {
       address: req.body.address,
       owner_id: owner._id
     };
-    
+
     // Parse opening hours if provided
     if (req.body.openingHours) {
       try {
@@ -66,14 +66,14 @@ export const createBusiness = async (req, res) => {
         console.error("Error parsing opening hours:", e);
       }
     }
-    
+
     // Parse cuisines if provided
     if (req.body.cuisines) {
       try {
-        businessData.cuisines = Array.isArray(req.body.cuisines) 
-          ? req.body.cuisines 
+        businessData.cuisines = Array.isArray(req.body.cuisines)
+          ? req.body.cuisines
           : JSON.parse(req.body.cuisines);
-        
+
         // Ensure cuisines is always an array
         if (!Array.isArray(businessData.cuisines)) {
           businessData.cuisines = [];
@@ -85,11 +85,11 @@ export const createBusiness = async (req, res) => {
     } else {
       businessData.cuisines = [];
     }
-    
+
     // Check if a business with this name already exists for this owner
-    const existingBusiness = await Business.findOne({ 
+    const existingBusiness = await Business.findOne({
       name: businessData.name,
-      owner_id: owner._id 
+      owner_id: owner._id
     });
 
     if (existingBusiness) {
@@ -113,7 +113,7 @@ export const createBusiness = async (req, res) => {
     // Create new business
     const business = new Business(businessData);
     await business.save();
-    
+
     res.status(201).json(business);
   } catch (error) {
     console.error("Error creating business:", error);
@@ -126,7 +126,7 @@ export const updateBusiness = async (req, res) => {
   try {
     const { businessId } = req.params;
     const owner = req.owner;
-    
+
     // Find the business and ensure it belongs to the owner
     const business = await Business.findOne({
       _id: businessId,
@@ -157,14 +157,14 @@ export const updateBusiness = async (req, res) => {
         console.error("Error parsing opening hours:", e);
       }
     }
-    
+
     // Parse cuisines if provided
     if (req.body.cuisines) {
       try {
-        business.cuisines = Array.isArray(req.body.cuisines) 
-          ? req.body.cuisines 
+        business.cuisines = Array.isArray(req.body.cuisines)
+          ? req.body.cuisines
           : JSON.parse(req.body.cuisines);
-        
+
         // Ensure cuisines is always an array
         if (!Array.isArray(business.cuisines)) {
           business.cuisines = [];
@@ -188,7 +188,7 @@ export const updateBusiness = async (req, res) => {
           }
           return item;
         });
-        
+
         // Ensure menu items is always an array
         if (Array.isArray(menuItems)) {
           business.menuItems = menuItems;
@@ -220,7 +220,7 @@ export const updateBusiness = async (req, res) => {
         updatedGallery = updatedGallery.filter(url => !removed.includes(url));
       }
     }
-    
+
     // Upload and append new images
     if (req.files?.business_images?.length) {
       const newUrls = await Promise.all(
@@ -228,7 +228,7 @@ export const updateBusiness = async (req, res) => {
       );
       updatedGallery.push(...newUrls);
     }
-    
+
     // Save back to business
     business.images = updatedGallery;
 
@@ -236,7 +236,7 @@ export const updateBusiness = async (req, res) => {
     if (req.files?.menuItemImage || req.body.menuItemImage) {
       const imageFile = req.files?.menuItemImage?.[0] || req.body.menuItemImage;
       const menuItemIndex = parseInt(req.body.menuItemImageIndex);
-      
+
       if (!isNaN(menuItemIndex) && imageFile && business.menuItems[menuItemIndex]) {
         const imageUrl = await uploadImage(imageFile);
         business.menuItems[menuItemIndex].imageUrl = imageUrl;
@@ -245,7 +245,7 @@ export const updateBusiness = async (req, res) => {
 
     business.lastUpdated = new Date();
     await business.save();
-    
+
     res.status(200).json(business);
   } catch (error) {
     console.error("Error updating business:", error);
@@ -258,16 +258,16 @@ export const deleteBusiness = async (req, res) => {
   try {
     const { businessId } = req.params;
     const owner = req.owner;
-    
+
     const result = await Business.findOneAndDelete({
       _id: businessId,
       owner_id: owner._id
     });
-    
+
     if (!result) {
       return res.status(404).json({ message: "Business not found" });
     }
-    
+
     res.status(200).json({ message: "Business deleted successfully" });
   } catch (error) {
     console.error("Error deleting business:", error);
@@ -280,17 +280,17 @@ export const getBusinessStats = async (req, res, next) => {
   try {
     const { businessId } = req.params;
     const owner = req.owner;
-    
-    const business = await Business.findOne({ 
+
+    const business = await Business.findOne({
       _id: businessId,
       owner_id: owner._id
     });
-    
+
     if (!business) {
       return next(new EntityNotFoundError("Business not found"));
     }
 
-    stats = await BusinessStats.findOne({ 
+    stats = await BusinessStats.findOne({
       businessId: business._id
     });
 
@@ -300,7 +300,7 @@ export const getBusinessStats = async (req, res, next) => {
       });
       await stats.save();
     }
-    
+
     res.status(200).json({ success: true, error: false, data: stats });
   } catch (error) {
     next(error);
@@ -320,18 +320,18 @@ export const getPopularBusinesses = async (req, res) => {
       {
         $addFields: {
           // Calculate log(review_count + 1) to handle 0 reviews and normalize
-          logReviewCount: { $ln: { $add: ["$review_count", 1] } }, 
+          logReviewCount: { $ln: { $add: ["$review_count", 1] } },
         }
       },
       {
-         $addFields: {
-            popularityScore: {
-                $add: [
-                  { $multiply: ["$rating", ratingWeight] },
-                  { $multiply: ["$logReviewCount", reviewCountWeight] }
-                ]
-            }
-         }
+        $addFields: {
+          popularityScore: {
+            $add: [
+              { $multiply: ["$rating", ratingWeight] },
+              { $multiply: ["$logReviewCount", reviewCountWeight] }
+            ]
+          }
+        }
       },
       // Sort by the calculated popularity score (descending)
       {
@@ -346,15 +346,15 @@ export const getPopularBusinesses = async (req, res) => {
       // Project only necessary fields (improves performance)
       {
         $project: {
-            // Include fields needed by RestaurantCard
-            name: 1,
-            address: 1,
-            rating: 1,
-            review_count: 1,
-            imageUrl: 1,
-            cuisines: 1,
-            openingHours: 1, 
-            _id: 1,
+          // Include fields needed by RestaurantCard
+          name: 1,
+          address: 1,
+          rating: 1,
+          review_count: 1,
+          imageUrl: 1,
+          cuisines: 1,
+          openingHours: 1,
+          _id: 1,
         }
       }
     ];
@@ -392,6 +392,6 @@ export default {
   createBusiness,
   updateBusiness,
   deleteBusiness,
-  getBusinessStats
+  getBusinessStats,
   getPopularBusinesses,
 };
