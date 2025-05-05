@@ -202,7 +202,7 @@ export const isValidOwner = async (ownerId, businessId) => {
         throw new EntityNotFoundError("Business not found.");
     }
 
-    if (business.owner_id !== ownerId) {
+    if (business.owner_id.toString() !== ownerId.toString()) {
         throw new InvalidDataError("You are not the owner of this business.");
     }
 }
