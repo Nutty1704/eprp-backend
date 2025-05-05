@@ -1,7 +1,6 @@
 import { deleteFromCloudinary, uploadToCloudinary } from "../lib/cloudinary.js"
 import { InvalidDataError } from "../lib/error-utils.js"
 import Customer from "../models/user/customer.model.js"
-import User from "../models/user/user.model.js"
 import { logout } from "./auth.controller.js"
 import { cloudinaryFolder as customerFolder, getFullId, getPublicId } from '../config/customer.config.js'
 
@@ -57,10 +56,6 @@ export const deleteCustomer = async (req, res, next) => {
     await removeProfileImageFromCloudinary(req.customer, next);
 
     await Customer.findByIdAndDelete(req.customer._id);
-
-    if (!req.user.roles.owner) {
-        await User.findByIdAndDelete(req.user._id);
-    }
 
     logout(req, res, next);
 }

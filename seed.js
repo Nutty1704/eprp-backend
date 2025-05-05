@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt';
 import { faker } from '@faker-js/faker';
 import dotenv from 'dotenv';
 
-import User from './src/models/user/user.model.js';
 import Owner from './src/models/user/owner.model.js';
 import Customer from './src/models/user/customer.model.js';
 import Business from './src/models/business/business.model.js'; 
@@ -120,88 +119,126 @@ const seedDatabase = async () => {
         await Customer.deleteMany({});
         console.log("Deleting Owners...");
         await Owner.deleteMany({});
-        console.log("Deleting Users...");
-        await User.deleteMany({});
-        console.log("Existing data cleared.");
+        
 
         console.log("--- Generating New Data ---");
 
-        // 1. Generate Users
-        const users = [];
-        const ownerUserIds = [];
-        const customerUserIds = [];
         const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
 
-        console.log(`Generating ${NUM_OWNERS} owner users...`);
-        for (let i = 0; i < NUM_OWNERS; i++) {
-            const firstName = faker.person.firstName();
-            const lastName = faker.person.lastName();
-            const user = {
-                email: faker.internet.email({ firstName, lastName, provider: `owner${i}.test`}), // Ensure unique emails
-                password: hashedPassword,
-                name: `${firstName} ${lastName}`,
-                phone: faker.phone.number('04########'),
-                roles: { owner: true }, // Mark as owner role
-                // googleId: null // Assuming no googleId for seeded users
-            };
-            users.push(user);
-        }
-
-        console.log(`Generating ${NUM_CUSTOMERS} customer users...`);
+        // 1. Generate Customer data
+        const customers = []
         for (let i = 0; i < NUM_CUSTOMERS; i++) {
             const firstName = faker.person.firstName();
             const lastName = faker.person.lastName();
-            const user = {
+            const customer = {
                 email: faker.internet.email({ firstName, lastName, provider: `customer${i}.test`}), // Ensure unique emails
                 password: hashedPassword,
                 name: `${firstName} ${lastName}`,
-                phone: faker.phone.number('04########'),
-                roles: { customer: true }, // Mark as customer role
-            };
-            users.push(user);
-        }
-
-        console.log("Inserting Users...");
-        const createdUsers = await User.insertMany(users);
-        console.log(`${createdUsers.length} users inserted.`);
-
-        createdUsers.forEach(user => {
-            if (user.roles.has('owner')) {
-                ownerUserIds.push(user._id);
-            } else if (user.roles.has('customer')) {
-                customerUserIds.push(user._id);
-            }
-        });
-
-        // 2. Generate Owners
-        console.log("Generating Owners...");
-        const ownersData = ownerUserIds.map(userId => {
-            const user = createdUsers.find(u => u._id.equals(userId));
-            const nameParts = user.name.split(' ');
-            return {
-                user_id: userId,
-                fname: nameParts[0],
-                lname: nameParts.slice(1).join(' ') || 'OwnerLastName', // Handle single names
-                profile_image: faker.image.avatar(),
-            };
-        });
-        const createdOwners = await Owner.insertMany(ownersData);
-        console.log(`${createdOwners.length} owners inserted.`);
-
-        // 3. Generate Customers
-        console.log("Generating Customers...");
-        const customersData = customerUserIds.map(userId => {
-             const user = createdUsers.find(u => u._id.equals(userId));
-             return {
-                user_id: userId,
-                name: user.name,
                 bio: faker.lorem.sentence(),
                 review_count: faker.number.int({ min: 0, max: 50 }), // Give some initial review counts
                 profile_image: faker.image.avatar(),
             };
-        });
-        const createdCustomers = await Customer.insertMany(customersData);
-        console.log(`${createdCustomers.length} customers inserted.`);
+            customers.push(customer);
+        }
+
+        const createdUsers = await Customer.insertMany(customers);
+        console.log(`${createdUsers.length} users inserted.`);
+
+        // 2. Generate Owner data
+        const Owners = []
+        for (let i = 0; i < NUM_OWNERS; i++) {
+            const firstName = faker.person.firstName();
+            const lastName = faker.person.lastName();
+            const owner = {
+                email: faker.internet.email({ firstName, lastName, provider: `owner${i}.test`}), // Ensure unique emails
+                password: hashedPassword,
+                fname: `${firstName}`,
+                lname: ` ${lastName}`,
+                profile_image: faker.image.avatar(),
+            };
+            Owners.push(owner);
+        }
+
+        const createdOwners = await Owner.insertMany(Owners);
+        console.log(`${createdOwners.length} owners inserted.`);
+
+
+        // // 1. Generate Users
+        // const users = [];
+        // const ownerUserIds = [];
+        // const customerUserIds = [];
+        // 
+
+        // console.log(`Generating ${NUM_OWNERS} owner users...`);
+        // for (let i = 0; i < NUM_OWNERS; i++) {
+        //     const firstName = faker.person.firstName();
+        //     const lastName = faker.person.lastName();
+        //     const user = {
+        //         email: faker.internet.email({ firstName, lastName, provider: `owner${i}.test`}), // Ensure unique emails
+        //         password: hashedPassword,
+        //         name: `${firstName} ${lastName}`,
+        //         phone: faker.phone.number('04########'),
+        //         roles: { owner: true }, // Mark as owner role
+        //         // googleId: null // Assuming no googleId for seeded users
+        //     };
+        //     users.push(user);
+        // }
+
+        // console.log(`Generating ${NUM_CUSTOMERS} customer users...`);
+        // for (let i = 0; i < NUM_CUSTOMERS; i++) {
+        //     const firstName = faker.person.firstName();
+        //     const lastName = faker.person.lastName();
+        //     const user = {
+        //         email: faker.internet.email({ firstName, lastName, provider: `customer${i}.test`}), // Ensure unique emails
+        //         password: hashedPassword,
+        //         name: `${firstName} ${lastName}`,
+        //         phone: faker.phone.number('04########'),
+        //         roles: { customer: true }, // Mark as customer role
+        //     };
+        //     users.push(user);
+        // }
+
+        // console.log("Inserting Users...");
+        // const createdUsers = await User.insertMany(users);
+        // console.log(`${createdUsers.length} users inserted.`);
+
+        // createdUsers.forEach(user => {
+        //     if (user.roles.has('owner')) {
+        //         ownerUserIds.push(user._id);
+        //     } else if (user.roles.has('customer')) {
+        //         customerUserIds.push(user._id);
+        //     }
+        // });
+
+        // // 2. Generate Owners
+        // console.log("Generating Owners...");
+        // const ownersData = ownerUserIds.map(userId => {
+        //     const user = createdUsers.find(u => u._id.equals(userId));
+        //     const nameParts = user.name.split(' ');
+        //     return {
+        //         user_id: userId,
+        //         fname: nameParts[0],
+        //         lname: nameParts.slice(1).join(' ') || 'OwnerLastName', // Handle single names
+        //         profile_image: faker.image.avatar(),
+        //     };
+        // });
+        // const createdOwners = await Owner.insertMany(ownersData);
+        // console.log(`${createdOwners.length} owners inserted.`);
+
+        // // 3. Generate Customers
+        // console.log("Generating Customers...");
+        // const customersData = customerUserIds.map(userId => {
+        //      const user = createdUsers.find(u => u._id.equals(userId));
+        //      return {
+        //         user_id: userId,
+        //         name: user.name,
+        //         bio: faker.lorem.sentence(),
+        //         review_count: faker.number.int({ min: 0, max: 50 }), // Give some initial review counts
+        //         profile_image: faker.image.avatar(),
+        //     };
+        // });
+        // const createdCustomers = await Customer.insertMany(customersData);
+        // console.log(`${createdCustomers.length} customers inserted.`);
 
         // 4. Generate Businesses
         console.log("Generating Businesses...");
