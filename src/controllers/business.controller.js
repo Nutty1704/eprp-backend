@@ -290,7 +290,7 @@ export const getBusinessStats = async (req, res, next) => {
       return next(new EntityNotFoundError("Business not found"));
     }
 
-    stats = await BusinessStats.findOne({
+    let stats = await BusinessStats.findOne({
       businessId: business._id
     });
 
