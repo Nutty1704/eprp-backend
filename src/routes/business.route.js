@@ -36,4 +36,7 @@ router.put(
 // Delete a business
 router.delete("/:businessId", isOwner, businessController.deleteBusiness);
 
+
+router.get("/:businessId/stats", isOwner, businessController.getBusinessStats);
+
 export default router;

@@ -18,7 +18,7 @@ import cuisineRouter from './routes/cuisine.route.js'
 
 import mongoose from 'mongoose';
 import errorHandler from './middlewares/error-handler.middleware.js';
-import { isAuthenticated, isCustomer } from './middlewares/auth.middleware.js';
+import { isCustomer } from './middlewares/auth.middleware.js';
 
 
 dotenv.config(); // Load environment variables from .env file

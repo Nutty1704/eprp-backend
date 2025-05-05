@@ -2,11 +2,19 @@ import mongoose from "mongoose";
 
 
 const ownerSchema = new mongoose.Schema({
-    user_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+    email: {
+        type: String,
         required: true,
         unique: true
+    },
+    password: {
+        type: String,
+        required: function () { return !this.googleId; }
+    },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
     },
     fname: {
         type: String,

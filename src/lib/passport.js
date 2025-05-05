@@ -1,43 +1,56 @@
 import passport from "passport";
 import bcryptjs from "bcryptjs";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20"
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 
-import User from "../models/user/user.model.js";
 import Customer from "../models/user/customer.model.js";
 import Owner from "../models/user/owner.model.js";
 
-import { alreadyExists, createRoleEntity, isValidUserRole } from "./user-helper.js";
-
-import dotenv from "dotenv";
 import { InvalidRoleError } from "./error-utils.js";
+import dotenv from "dotenv";
 
 dotenv.config();
 
-// Local Strategy for authenticating users
+// Local Strategy with role specification
 passport.use(
-  new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
-    try {
-      const user = await User.findOne({ email });
-      if (!user) return done(null, false, { message: "User not found" });
-
-      const isMatch = await bcryptjs.compare(password, user.password);
-      if (!isMatch) return done(null, false, { message: "Incorrect credentials" });
-
-      const roles = await fetchUserRoles(user._id);
-
-      if (Object.keys(roles).length === 0) {
-        return done(null, false, { message: "User role entity not found" });
+  new LocalStrategy(
+    { 
+      usernameField: "email",
+      passReqToCallback: true  // Allow access to request object
+    }, 
+    async (req, email, password, done) => {
+      try {
+        // Get role from request
+        const role = req.body.role;
+        
+        if (!role || (role !== "customer" && role !== "owner")) {
+          return done(null, false, { message: "Invalid role specified" });
+        }
+        
+        // Query the appropriate collection based on role
+        const UserModel = role === "customer" ? Customer : Owner;
+        const user = await UserModel.findOne({ email });
+        
+        if (!user) {
+          return done(null, false, { message: "User not found" });
+        }
+        
+        // Verify password
+        const isMatch = await bcryptjs.compare(password, user.password);
+        if (!isMatch) {
+          return done(null, false, { message: "Incorrect credentials" });
+        }
+        
+        // Add role information to the user object
+        return done(null, { ...user.toObject(), userType: role });
+      } catch (error) {
+        return done(error);
       }
-
-      return done(null, { ...user.toObject(), roles }); // Attach roles
-    } catch (error) {
-      return done(error);
     }
-  })
+  )
 );
 
-
+// Google Strategy with role specification from state parameter
 passport.use(
   new GoogleStrategy(
     {
@@ -55,32 +68,40 @@ passport.use(
           return cb(new InvalidRoleError());
         }
 
-        // The rest of your code remains the same
-        let user = await User.findOne({ email: profile.emails[0].value });
-
-        const createRole = async (user) => {
-          if (role === 'owner') {
-            await createRoleEntity(role, user, { fname: profile.name.givenName, lname: profile.name.familyName });
-          } else {
-            await createRoleEntity(role, user, {});
+        const email = profile.emails[0].value;
+        const googleId = profile.id;
+        
+        // Use appropriate model based on role
+        const UserModel = role === "customer" ? Customer : Owner;
+        
+        // Check if user exists in the specified role collection
+        let user = await UserModel.findOne({ $or: [{ email }, { googleId }] });
+        
+        if (!user) {
+          // Create new user in appropriate collection
+          if (role === "customer") {
+            user = new Customer({
+              email,
+              googleId,
+              name: profile.displayName || "",
+            });
+          } else { // owner
+            user = new Owner({
+              email,
+              googleId,
+              fname: profile.name.givenName || "",
+              lname: profile.name.familyName || "",
+            });
           }
-        }
-
-        if (user) {
-          if (!(await alreadyExists(user, role))) {
-            await createRole(user);
-          }
-        } else {
-          user = new User({
-            email: profile.emails[0].value,
-            googleId: profile.id,
-          });
           await user.save();
-
-          await createRole(user);
+        } else if (!user.googleId) {
+          // Link google account to existing email-based account
+          user.googleId = googleId;
+          await user.save();
         }
 
-        return cb(null, user);
+        // Add role information
+        return cb(null, { ...user.toObject(), userType: role });
       } catch (error) {
         return cb(error);
       }
@@ -88,35 +109,32 @@ passport.use(
   )
 );
 
-// Store user ID in session
+// Serialize user - store userType alongside the ID
 passport.serializeUser((user, done) => {
-  done(null, user._id);
+  done(null, {
+    id: user._id,
+    userType: user.userType
+  });
 });
 
-passport.deserializeUser(async (id, done) => {
+// Deserialize user - load from appropriate collection based on userType
+passport.deserializeUser(async (serialized, done) => {
   try {
-    const user = await User.findById(id);
-    if (!user) return done(null, false);
+    const { id, userType } = serialized;
+    
+    // Use appropriate model based on userType
+    const UserModel = userType === "customer" ? Customer : Owner;
+    const user = await UserModel.findById(id);
 
-    const roles = await fetchUserRoles(id);
+    if (!user) {
+      return done(null, false);
+    }
 
-    done(null, { ...user.toObject(), roles });
+    // Add userType to the deserialized object
+    done(null, { ...user.toObject(), userType });
   } catch (error) {
     done(error);
   }
 });
-
-
-// helper function
-
-const fetchUserRoles = async (userId) => {
-  const customer = await Customer.findOne({ user_id: userId });
-  const owner = await Owner.findOne({ user_id: userId });
-
-  return {
-    ...(customer && { customer }),
-    ...(owner && { owner }),
-  };
-};
 
 export default passport;
