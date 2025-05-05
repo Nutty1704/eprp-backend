@@ -11,6 +11,8 @@ const multiUpload = uploadImg.fields([
   { name: 'menuItemImage', maxCount: 1 }
 ]);
 
+router.get("/popular", businessController.getPopularBusinesses); 
+
 // Get all businesses for the logged-in owner
 router.get("/", isOwner, businessController.getMyBusinesses);
 
@@ -35,5 +37,7 @@ router.put(
 
 // Delete a business
 router.delete("/:businessId", isOwner, businessController.deleteBusiness);
+
+
 
 export default router;
