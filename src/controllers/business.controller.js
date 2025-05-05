@@ -95,9 +95,17 @@ export const createBusiness = async (req, res) => {
     }
 
     // Handle image upload if exists
-    if (req.file) {
-      const imageUrl = await uploadImage(req.file);
+    if (req.files?.profile_image?.[0]) {
+      const imageFile = req.files.profile_image[0];
+      const imageUrl = await uploadImage(imageFile);
       businessData.imageUrl = imageUrl;
+    }
+
+    if (req.files?.business_images?.length) {
+      const businessUrls = await Promise.all(
+        req.files.business_images.map(file => uploadImage(file))
+      );
+      businessData.images = businessUrls;
     }
 
     // Create new business
@@ -188,12 +196,39 @@ export const updateBusiness = async (req, res) => {
       }
     }
 
-    // Handle business profile image upload
-    if (req.files?.profile_image || req.file) {
-      const imageFile = req.files?.profile_image?.[0] || req.file;
+    if (req.body.profileImageDeleted === "true") {
+      business.imageUrl = null;
+    } else if (req.files?.profile_image?.[0]) {
+      const imageFile = req.files?.profile_image?.[0];
       const imageUrl = await uploadImage(imageFile);
       business.imageUrl = imageUrl;
     }
+
+    let updatedGallery = business.images || [];
+
+    // Remove any deleted URLs
+    if (req.body.removedImageUrls) {
+      let removed = [];
+      try {
+        removed = JSON.parse(req.body.removedImageUrls);
+      } catch (e) {
+        console.error("Error parsing removed image URLs:", e);
+      }
+      if (Array.isArray(removed)) {
+        updatedGallery = updatedGallery.filter(url => !removed.includes(url));
+      }
+    }
+    
+    // Upload and append new images
+    if (req.files?.business_images?.length) {
+      const newUrls = await Promise.all(
+        req.files.business_images.map(file => uploadImage(file))
+      );
+      updatedGallery.push(...newUrls);
+    }
+    
+    // Save back to business
+    business.images = updatedGallery;
 
     // Handle menu item image upload
     if (req.files?.menuItemImage || req.body.menuItemImage) {
