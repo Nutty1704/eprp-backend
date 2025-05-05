@@ -257,7 +257,12 @@ const seedDatabase = async () => {
             const locationInfo = faker.helpers.arrayElement(melbourneLocations);
             const businessName = faker.company.name() + (Math.random() > 0.5 ? ` ${faker.helpers.arrayElement(['Eatery', 'Cafe', 'Bistro', 'Kitchen', 'Bar', 'Grill'])}` : '');
             const selectedCuisines = faker.helpers.arrayElements(cuisinesList, { min: 1, max: 3 });
-
+            const sanitizedName = businessName
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, '') // Remove anything not a-z or 0-9
+                    .substring(0, 50);
+            const domainPart = sanitizedName || faker.internet.url();
+            const websiteUrl = `https://www.${domainPart}.com.au`
             businessesData.push({
                 name: businessName,
                 description: faker.helpers.arrayElement(englishDescriptions),
@@ -269,6 +274,7 @@ const seedDatabase = async () => {
                 serviceRating: faker.number.float({ min: 2.0, max: 5, precision: 0.1 }),
                 ambienceRating: faker.number.float({ min: 2.0, max: 5, precision: 0.1 }),
                 review_count: faker.number.int({ min: 0, max: 650 }),
+                website: websiteUrl,
                 imageUrl: faker.image.urlLoremFlickr({ category: 'restaurant', width: 640, height: 480 }),
                 images: Array.from({ length: faker.number.int({ min: 2, max: 5 }) }, () => faker.image.urlLoremFlickr({ category: 'food', width: 640, height: 480 })),
                 owner_id: owner._id,

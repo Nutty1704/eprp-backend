@@ -38,6 +38,7 @@ const businessSchema = new mongoose.Schema({
     serviceRating: { type: Number, default: 0 },
     ambienceRating: { type: Number, default: 0 },
     review_count: { type: Number, default: 0 },
+    website: { type: String, default: ""},
     imageUrl: { type: String, default: "" },
     images: { type: Array, default: [] },
     owner_id: {
