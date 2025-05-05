@@ -2,6 +2,8 @@ import Business from "../models/business/business.model.js";
 import cloudinary from "cloudinary";
 import fs from "fs/promises";
 import mongoose from "mongoose";
+import { EntityNotFoundError } from "../lib/error-utils.js";
+import BusinessStats from "../models/business/business_stats.model.js";
 
 // Get all businesses for the logged-in owner
 export const getMyBusinesses = async (req, res) => {
@@ -273,6 +275,38 @@ export const deleteBusiness = async (req, res) => {
   }
 };
 
+
+export const getBusinessStats = async (req, res, next) => {
+  try {
+    const { businessId } = req.params;
+    const owner = req.owner;
+    
+    const business = await Business.findOne({ 
+      _id: businessId,
+      owner_id: owner._id
+    });
+    
+    if (!business) {
+      return next(new EntityNotFoundError("Business not found"));
+    }
+
+    stats = await BusinessStats.findOne({ 
+      businessId: business._id
+    });
+
+    if (!stats) {
+      stats = new BusinessStats({
+        businessId: business._id
+      });
+      await stats.save();
+    }
+    
+    res.status(200).json({ success: true, error: false, data: stats });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export const getPopularBusinesses = async (req, res) => {
   try {
     // Get query parameters or set defaults
@@ -358,5 +392,6 @@ export default {
   createBusiness,
   updateBusiness,
   deleteBusiness,
+  getBusinessStats
   getPopularBusinesses,
 };

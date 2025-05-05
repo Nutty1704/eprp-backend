@@ -2,11 +2,6 @@ import mongoose from "mongoose";
 
 
 const responseSchema = new mongoose.Schema({
-    business_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Business',
-        required: true
-    },
     review_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Review',

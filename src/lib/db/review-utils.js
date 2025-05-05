@@ -1,4 +1,6 @@
 import Business from "../../models/business/business.model.js"
+import BusinessStats from "../../models/business/business_stats.model.js";
+import Response from "../../models/review/response.model.js";
 import Review from "../../models/review/review.model.js"
 import ReviewUpvote from "../../models/review/review_upvote.model.js"
 import Customer from "../../models/user/customer.model.js"
@@ -54,6 +56,16 @@ export const postCreateReview = async (review) => {
 
         // Increment customer review count
         await Customer.findByIdAndUpdate(review.customerId, { $inc: { review_count: 1 } });
+
+        await BusinessStats.findOneAndUpdate({ businessId: review.businessId }, {
+            $inc: {
+                count5Star: math.floor(review.rating) === 5 ? 1 : 0,
+                count4Star: math.floor(review.rating) === 4 ? 1 : 0,
+                count3Star: math.floor(review.rating) === 3 ? 1 : 0,
+                count2Star: math.floor(review.rating) === 2 ? 1 : 0,
+                count1Star: math.floor(review.rating) === 1 ? 1 : 0,
+            }
+        }, { upsert: true, setDefaultsOnInsert: true });
     } catch (error) {
         console.error("Error updating business ratings:", error);
         throw error;
@@ -97,6 +109,16 @@ export const postDeleteReview = async (review) => {
 
             // Decrement customer review count
             await Customer.findByIdAndUpdate(review.customerId, { $inc: { review_count: -1 } });
+
+            await BusinessStats.findOneAndUpdate({ businessId: review.businessId }, {
+                $inc: {
+                    count5Star: math.floor(review.rating) === 5 ? -1 : 0,
+                    count4Star: math.floor(review.rating) === 4 ? -1 : 0,
+                    count3Star: math.floor(review.rating) === 3 ? -1 : 0,
+                    count2Star: math.floor(review.rating) === 2 ? -1 : 0,
+                    count1Star: math.floor(review.rating) === 1 ? -1 : 0,
+                }
+            }, { upsert: true, setDefaultsOnInsert: true });
         }
     } catch (error) {
         console.error("Error updating business ratings:", error);
@@ -135,6 +157,23 @@ export const postUpdateReview = async (oldReview, updatedReview) => {
             ambienceRating: newAmbienceRating
         });
 
+        await BusinessStats.findOneAndUpdate({ businessId: oldReview.businessId }, {
+            $inc: {
+                count5Star: math.floor(oldReview.rating) === 5 ? -1 : 0,
+                count4Star: math.floor(oldReview.rating) === 4 ? -1 : 0,
+                count3Star: math.floor(oldReview.rating) === 3 ? -1 : 0,
+                count2Star: math.floor(oldReview.rating) === 2 ? -1 : 0,
+                count1Star: math.floor(oldReview.rating) === 1 ? -1 : 0,
+            },
+            $inc: {
+                count5Star: math.floor(updatedReview.rating) === 5 ? 1 : 0,
+                count4Star: math.floor(updatedReview.rating) === 4 ? 1 : 0,
+                count3Star: math.floor(updatedReview.rating) === 3 ? 1 : 0,
+                count2Star: math.floor(updatedReview.rating) === 2 ? 1 : 0,
+                count1Star: math.floor(updatedReview.rating) === 1 ? 1 : 0,
+            }
+        });
+
     } catch (error) {
         console.error("Error updating business ratings after review update:", error);
         throw error;
@@ -165,5 +204,22 @@ export const isValidOwner = async (ownerId, businessId) => {
 
     if (business.owner_id !== ownerId) {
         throw new InvalidDataError("You are not the owner of this business.");
+    }
+}
+
+
+export const attachResponses = async (reviews) => {
+    try {
+        const reviewsWithResponses = await Promise.all(
+            reviews.map(async (review) => {
+                const response = await Response.findOne({ review_id: review._id }).select('text updatedAt');
+                return { ...review.toObject(), response };
+            })
+        );
+        
+        return reviewsWithResponses;
+    } catch (error) {
+        console.log('Error attaching responses:', error);
+        throw error;
     }
 }

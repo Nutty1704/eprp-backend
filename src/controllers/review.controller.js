@@ -3,6 +3,7 @@ import Response from "../models/review/response.model.js"
 import { InvalidDataError, EntityNotFoundError } from '../lib/error-utils.js'
 import ReviewUpvote from "../models/review/review_upvote.model.js"
 import {
+    attachResponses,
     getFilteredReviews, isValidOwner, populateUpvotes,
     postCreateReview, postDeleteReview,
     postUpdateReview
@@ -22,7 +23,9 @@ export const getReviews = async (req, res, next) => {
         }
 
         const filter = customerId ? { customerId } : { businessId };
-        const reviews = await getFilteredReviews(filter, req.query);
+        let reviews = await getFilteredReviews(filter, req.query);
+
+        reviews = await attachResponses(reviews);
 
         if (customerId) {
             await populateUpvotes(reviews, customerId);
@@ -99,8 +102,6 @@ export const createResponse = async (req, res, next) => {
     try {
         const { reviewId, text } = req.body;
         const ownerId = req.owner._id;
-
-        console.log(req.owner);
 
         if (!reviewId) {
             throw new InvalidDataError("Missing reviewId.");
