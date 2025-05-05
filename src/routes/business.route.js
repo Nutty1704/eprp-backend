@@ -8,7 +8,8 @@ const router = express.Router();
 // Configure multer for multiple file uploads
 const multiUpload = uploadImg.fields([
   { name: 'profile_image', maxCount: 1 },
-  { name: 'menuItemImage', maxCount: 1 }
+  { name: 'menuItemImage', maxCount: 1 },
+  { name: 'business_images', maxCount: 30 }
 ]);
 
 router.get("/popular", businessController.getPopularBusinesses); 
