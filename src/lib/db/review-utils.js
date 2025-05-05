@@ -59,11 +59,11 @@ export const postCreateReview = async (review) => {
 
         await BusinessStats.findOneAndUpdate({ businessId: review.businessId }, {
             $inc: {
-                count5Star: math.floor(review.rating) === 5 ? 1 : 0,
-                count4Star: math.floor(review.rating) === 4 ? 1 : 0,
-                count3Star: math.floor(review.rating) === 3 ? 1 : 0,
-                count2Star: math.floor(review.rating) === 2 ? 1 : 0,
-                count1Star: math.floor(review.rating) === 1 ? 1 : 0,
+                count5Star: Math.floor(review.rating) === 5 ? 1 : 0,
+                count4Star: Math.floor(review.rating) === 4 ? 1 : 0,
+                count3Star: Math.floor(review.rating) === 3 ? 1 : 0,
+                count2Star: Math.floor(review.rating) === 2 ? 1 : 0,
+                count1Star: Math.floor(review.rating) === 1 ? 1 : 0,
             }
         }, { upsert: true, setDefaultsOnInsert: true });
     } catch (error) {
@@ -112,11 +112,11 @@ export const postDeleteReview = async (review) => {
 
             await BusinessStats.findOneAndUpdate({ businessId: review.businessId }, {
                 $inc: {
-                    count5Star: math.floor(review.rating) === 5 ? -1 : 0,
-                    count4Star: math.floor(review.rating) === 4 ? -1 : 0,
-                    count3Star: math.floor(review.rating) === 3 ? -1 : 0,
-                    count2Star: math.floor(review.rating) === 2 ? -1 : 0,
-                    count1Star: math.floor(review.rating) === 1 ? -1 : 0,
+                    count5Star: Math.floor(review.rating) === 5 ? -1 : 0,
+                    count4Star: Math.floor(review.rating) === 4 ? -1 : 0,
+                    count3Star: Math.floor(review.rating) === 3 ? -1 : 0,
+                    count2Star: Math.floor(review.rating) === 2 ? -1 : 0,
+                    count1Star: Math.floor(review.rating) === 1 ? -1 : 0,
                 }
             }, { upsert: true, setDefaultsOnInsert: true });
         }
@@ -159,18 +159,18 @@ export const postUpdateReview = async (oldReview, updatedReview) => {
 
         await BusinessStats.findOneAndUpdate({ businessId: oldReview.businessId }, {
             $inc: {
-                count5Star: math.floor(oldReview.rating) === 5 ? -1 : 0,
-                count4Star: math.floor(oldReview.rating) === 4 ? -1 : 0,
-                count3Star: math.floor(oldReview.rating) === 3 ? -1 : 0,
-                count2Star: math.floor(oldReview.rating) === 2 ? -1 : 0,
-                count1Star: math.floor(oldReview.rating) === 1 ? -1 : 0,
+                count5Star: Math.floor(oldReview.rating) === 5 ? -1 : 0,
+                count4Star: Math.floor(oldReview.rating) === 4 ? -1 : 0,
+                count3Star: Math.floor(oldReview.rating) === 3 ? -1 : 0,
+                count2Star: Math.floor(oldReview.rating) === 2 ? -1 : 0,
+                count1Star: Math.floor(oldReview.rating) === 1 ? -1 : 0,
             },
             $inc: {
-                count5Star: math.floor(updatedReview.rating) === 5 ? 1 : 0,
-                count4Star: math.floor(updatedReview.rating) === 4 ? 1 : 0,
-                count3Star: math.floor(updatedReview.rating) === 3 ? 1 : 0,
-                count2Star: math.floor(updatedReview.rating) === 2 ? 1 : 0,
-                count1Star: math.floor(updatedReview.rating) === 1 ? 1 : 0,
+                count5Star: Math.floor(updatedReview.rating) === 5 ? 1 : 0,
+                count4Star: Math.floor(updatedReview.rating) === 4 ? 1 : 0,
+                count3Star: Math.floor(updatedReview.rating) === 3 ? 1 : 0,
+                count2Star: Math.floor(updatedReview.rating) === 2 ? 1 : 0,
+                count1Star: Math.floor(updatedReview.rating) === 1 ? 1 : 0,
             }
         });
 
