@@ -8,9 +8,9 @@ const reviewUpvoteSchema = new mongoose.Schema({
         ref: 'Review',
         required: true
     },
-    user_id: {
+    customer_id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Customer',
         required: true
     },
     createdAt: {
@@ -21,7 +21,7 @@ const reviewUpvoteSchema = new mongoose.Schema({
 
 
 // Ensure the review_id and user_id are unique as a pair
-reviewUpvoteSchema.index({ review_id: 1, user_id: 1 }, { unique: true });
+reviewUpvoteSchema.index({ review_id: 1, customer_id: 1 }, { unique: true });
 
 reviewUpvoteSchema.post('save', async function (doc) {
     try {

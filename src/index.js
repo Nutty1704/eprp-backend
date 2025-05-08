@@ -7,6 +7,7 @@ import cors from 'cors';
 import { connectDB } from './lib/mongodb.js'
 import { connectCloudinary } from './lib/cloudinary.js';
 import passport from './lib/passport.js';
+import scheduleDealStatusUpdates from './lib/deal-utils.js';
 
 // Router imports
 import authRouter from './routes/auth.route.js';
@@ -14,7 +15,8 @@ import customerRouter from './routes/customer.route.js';
 import reviewRouter from './routes/review.route.js';
 import businessRouter from './routes/business.route.js';
 import searchRouter from './routes/search.route.js';
-import cuisineRouter from './routes/cuisine.route.js'
+import cuisineRouter from './routes/cuisine.route.js';
+import dealRouter from './routes/deal.route.js';
 
 import mongoose from 'mongoose';
 import errorHandler from './middlewares/error-handler.middleware.js';
@@ -67,10 +69,14 @@ app.use('/api/reviews', reviewRouter);
 app.use('/api/business', businessRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/cuisines', cuisineRouter);
+app.use('/api/deals', dealRouter);
 
 
 // Error handling middleware
 app.use(errorHandler);
+
+// Start Scheduled Jobs (AFTER DB connection and setup)
+scheduleDealStatusUpdates();
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
