@@ -22,11 +22,27 @@ export const getFilteredReviews = async (filter, query) => {
     const pageSize = Math.max(1, parseInt(limit));
     const skip = (pageNumber - 1) * pageSize;
 
+    // Count total documents that match the filter
+    const total = await Review.countDocuments(filter);
+    
+    // Calculate total pages
+    const pages = Math.ceil(total / pageSize);
+    
     // Fetch reviews
-    return await Review.find(filter)
+    const reviews = await Review.find(filter)
         .sort(sortOptions)
         .skip(skip)
         .limit(pageSize);
+
+    return {
+        reviews,
+        metadata: {
+            total,
+            pages,
+            currentPage: pageNumber,
+            limit: pageSize
+        }
+    };
 };
 
 export const postCreateReview = async (review) => {
@@ -181,11 +197,14 @@ export const postUpdateReview = async (oldReview, updatedReview) => {
 };
 
 
-export const populateUpvotes = async (reviews, customer_id) => {
+export const populateUpvotes = async (reviews, customerId) => {
     try {
         await Promise.all(
             reviews.map(async (review) => {
-                review.isUpvoted = await ReviewUpvote.exists({ review_id: review._id, user_id: customer_id });
+                review.isLiked = (await ReviewUpvote.exists({ 
+                    reviewId: review._id, 
+                    customerId: customerId 
+                })) !== null;
             })
         );
     } catch (error) {
