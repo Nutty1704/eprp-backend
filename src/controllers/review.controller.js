@@ -16,13 +16,14 @@ import { deleteFromCloudinary, extractPublicIdFromUrl, uploadToCloudinary } from
 
 export const getReviews = async (req, res, next) => {
     try {
-        const { customerId, businessId } = req.query;
+        const customerId = req.customer ? req.customer._id.toString() : null;
+        const { businessId } = req.query;
 
-        if (!customerId && !businessId) {
-            return next(new InvalidDataError("Missing businessId or customerId."));
+        if (!businessId && !customerId) {
+            return next(new InvalidDataError("Missing businessId or you must be logged in."));
         }
 
-        const filter = customerId ? { customerId } : { businessId };
+        const filter = businessId ? { businessId } : { customerId };
         let reviews = await getFilteredReviews(filter, req.query);
 
         reviews = await attachResponses(reviews);
@@ -194,10 +195,10 @@ export const deleteReview = async (req, res, next) => {
 };
 
 export const voteReview = async (req, res, next) => {
-    const { reviewId: review_id, action } = req.body;
-    const user_id = req.customer.user_id;
+    const { reviewId, action } = req.body;
+    const customerId = req.customer._id;
 
-    if (!review_id) {
+    if (!reviewId) {
         return next(new InvalidDataError("Missing reviewId."));
     }
 
@@ -207,12 +208,12 @@ export const voteReview = async (req, res, next) => {
 
     try {
         if (action === "upvote") {
-            if (!await ReviewUpvote.exists({ review_id, user_id })) {
-                await ReviewUpvote.create({ review_id, user_id });
+            if (!await ReviewUpvote.exists({ reviewId, customerId })) {
+                await ReviewUpvote.create({ reviewId, customerId });
             }
         } else {
             // Remove the upvote if it exists (downvote = remove vote)
-            await ReviewUpvote.findOneAndDelete({ review_id, user_id });
+            await ReviewUpvote.findOneAndDelete({ reviewId, customerId });
         }
 
         res.status(200).json({ success: true, error: false });

@@ -181,11 +181,14 @@ export const postUpdateReview = async (oldReview, updatedReview) => {
 };
 
 
-export const populateUpvotes = async (reviews, customer_id) => {
+export const populateUpvotes = async (reviews, customerId) => {
     try {
         await Promise.all(
             reviews.map(async (review) => {
-                review.isUpvoted = await ReviewUpvote.exists({ review_id: review._id, user_id: customer_id });
+                review.isLiked = (await ReviewUpvote.exists({ 
+                    reviewId: review._id, 
+                    customerId: customerId 
+                })) !== null;
             })
         );
     } catch (error) {
