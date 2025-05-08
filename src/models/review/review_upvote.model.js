@@ -20,7 +20,7 @@ const reviewUpvoteSchema = new mongoose.Schema({
 });
 
 
-// Ensure the review_id and user_id are unique as a pair
+// Ensure the reviewId and customerId are unique as a pair
 reviewUpvoteSchema.index({ reviewId: 1, customerId: 1 }, { unique: true });
 
 reviewUpvoteSchema.post('save', async function (doc) {
