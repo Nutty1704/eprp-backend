@@ -3,14 +3,14 @@ import Review from "./review.model.js";
 
 
 const reviewUpvoteSchema = new mongoose.Schema({
-    review_id: {
+    reviewId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Review',
         required: true
     },
-    user_id: {
+    customerId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Customer',
         required: true
     },
     createdAt: {
@@ -21,11 +21,11 @@ const reviewUpvoteSchema = new mongoose.Schema({
 
 
 // Ensure the review_id and user_id are unique as a pair
-reviewUpvoteSchema.index({ review_id: 1, user_id: 1 }, { unique: true });
+reviewUpvoteSchema.index({ reviewId: 1, customerId: 1 }, { unique: true });
 
 reviewUpvoteSchema.post('save', async function (doc) {
     try {
-        await Review.findByIdAndUpdate(doc.review_id, { $inc: { upvotes: 1 } });
+        await Review.findByIdAndUpdate(doc.reviewId, { $inc: { upvotes: 1 } });
     } catch (error) {
         console.error("Error updating upvotes on save:", error);
     }
@@ -34,7 +34,7 @@ reviewUpvoteSchema.post('save', async function (doc) {
 reviewUpvoteSchema.post('findOneAndDelete', async function (doc) {
     try {
         if (doc) {
-            await Review.findByIdAndUpdate(doc.review_id, { $inc: { upvotes: -1 } });
+            await Review.findByIdAndUpdate(doc.reviewId, { $inc: { upvotes: -1 } });
         }
     } catch (error) {
         console.error("Error updating upvotes on delete:", error);

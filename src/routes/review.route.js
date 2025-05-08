@@ -1,5 +1,5 @@
 import express from 'express';
-import { isAuthenticated, isCustomer, isOwner } from '../middlewares/auth.middleware.js'
+import { isAuthenticated, isCustomer, isOwner, optionalCustomer } from '../middlewares/auth.middleware.js'
 import {
     createReview,
     getReview,
@@ -13,8 +13,8 @@ import { uploadImg } from '../middlewares/multer.middleware.js';
 
 const router = express.Router();
 
-router.get('/', getReviews);
-router.get('/:reviewId', getReview);
+router.get('/', optionalCustomer, getReviews);
+router.get('/:reviewId', optionalCustomer, getReview);
 
 router.post('/create', isAuthenticated, isCustomer, uploadImg.array('images', 3), createReview);
 router.post('/update', isAuthenticated, isCustomer, updateReview);
