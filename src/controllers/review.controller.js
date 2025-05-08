@@ -24,15 +24,20 @@ export const getReviews = async (req, res, next) => {
         }
 
         const filter = businessId ? { businessId } : { customerId };
-        let reviews = await getFilteredReviews(filter, req.query);
+        const { reviews, metadata } = await getFilteredReviews(filter, req.query);
 
-        reviews = await attachResponses(reviews);
+        const processedReviews = await attachResponses(reviews);
 
         if (customerId) {
-            await populateUpvotes(reviews, customerId);
+            await populateUpvotes(processedReviews, customerId);
         }
 
-        res.status(200).json({ success: true, error: false, data: reviews });
+        res.status(200).json({ 
+            success: true, 
+            error: false, 
+            data: processedReviews,
+            metadata
+        });
     } catch (error) {
         next(error);
     }
