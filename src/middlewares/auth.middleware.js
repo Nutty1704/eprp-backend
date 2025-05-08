@@ -26,3 +26,11 @@ export const isOwner = (req, res, next) => {
     req.owner = req.user;
     next();
 };
+
+
+export const optionalCustomer = (req, res, next) => {
+    if (req.isAuthenticated() && req.user.userType === 'customer') {
+        req.customer = req.user;
+    }
+    next();
+}
