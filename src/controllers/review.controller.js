@@ -60,17 +60,18 @@ export const getReview = async (req, res, next) => {
 export const createReview = async (req, res, next) => {
     const customerId = req.customer._id;
     const {
-        businessId, text, foodRating,
+        businessId, title, text, foodRating,
         serviceRating, ambienceRating
     } = req.body;
 
-    if (!businessId || !text || !foodRating || !serviceRating || !ambienceRating) {
+    if (!businessId | !title || !text || !foodRating || !serviceRating || !ambienceRating) {
         return next(new InvalidDataError("All fields are required: businessId, text, foodRating, serviceRating, ambienceRating."));
     }
 
     const review = new Review({
         businessId,
         customerId,
+        title,
         text,
         foodRating,
         serviceRating,
@@ -140,7 +141,7 @@ export const createResponse = async (req, res, next) => {
 export const updateReview = async (req, res, next) => {
     try {
         const customerId = req.customer._id;
-        const { reviewId, text, foodRating, serviceRating, ambienceRating } = req.body;
+        const { reviewId, title, text, foodRating, serviceRating, ambienceRating } = req.body;
 
         const review = await Review.findOne({ _id: reviewId, customerId });
 
@@ -151,6 +152,7 @@ export const updateReview = async (req, res, next) => {
         const oldReview = review.toObject();
 
         const updatedFields = {
+            title: title || review.title,
             text: text || review.text,
             foodRating: foodRating || review.foodRating,
             serviceRating: serviceRating || review.serviceRating,
