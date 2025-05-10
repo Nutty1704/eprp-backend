@@ -67,7 +67,7 @@ const dealSchema = new mongoose.Schema({
 
 // Ensure end date is after start date (basic validation)
 dealSchema.pre('save', function(next) {
-  if (this.endDate <= this.startDate) {
+  if (this.endDate < this.startDate) {
     next(new Error('End date must be after start date'));
   } else {
     // Automatically set initial status based on dates before first save
