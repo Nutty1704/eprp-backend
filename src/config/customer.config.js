@@ -5,5 +5,5 @@ export const getFullId = (customer) => {
 }
 
 export const getPublicId = (customer) => {
-    return customer.user_id;
+    return customer._id;
 }
