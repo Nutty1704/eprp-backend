@@ -17,6 +17,7 @@ import businessRouter from './routes/business.route.js';
 import searchRouter from './routes/search.route.js';
 import cuisineRouter from './routes/cuisine.route.js';
 import dealRouter from './routes/deal.route.js';
+import recommendationRouter from './routes/recommendation.route.js';
 
 import mongoose from 'mongoose';
 import errorHandler from './middlewares/error-handler.middleware.js';
@@ -70,7 +71,7 @@ app.use('/api/business', businessRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/cuisines', cuisineRouter);
 app.use('/api/deals', dealRouter);
-
+app.use('/api/recommendations', recommendationRouter);
 
 // Error handling middleware
 app.use(errorHandler);

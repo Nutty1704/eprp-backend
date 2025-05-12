@@ -74,3 +74,41 @@ const removeProfileImageFromCloudinary = async (customer, next) => {
         }
     }
 }
+
+export const updateMyPreferences = async (req, res) => {
+    try {
+        const customerId = req.customer._id; // From isCustomer middleware
+        const { preferredCuisines, preferredSuburb } = req.body;
+
+        // Basic validation (more can be added)
+        if (preferredCuisines && !Array.isArray(preferredCuisines)) {
+            return res.status(400).json({ message: 'preferredCuisines must be an array.' });
+        }
+        if (preferredSuburb && typeof preferredSuburb !== 'string') {
+            return res.status(400).json({ message: 'preferredSuburb must be a string.' });
+        }
+
+        const customer = await Customer.findById(customerId);
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found.' });
+        }
+
+        if (preferredCuisines !== undefined) {
+            customer.preferredCuisines = preferredCuisines.filter(c => typeof c === 'string'); // Sanitize
+        }
+        if (preferredSuburb !== undefined) {
+            customer.preferredSuburb = preferredSuburb.trim() || null; // Store null if empty string
+        }
+
+        await customer.save();
+        res.status(200).json({
+            message: 'Preferences updated successfully.',
+            preferredCuisines: customer.preferredCuisines,
+            preferredSuburb: customer.preferredSuburb,
+        });
+
+    } catch (error) {
+        console.error("Error updating customer preferences:", error);
+        res.status(500).json({ message: "Error updating preferences", error: error.message });
+    }
+};

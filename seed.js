@@ -11,11 +11,11 @@ import Deal from './src/models/business/deal.model.js';
 import Review from './src/models/review/review.model.js';
 import ReviewUpvote from './src/models/review/review_upvote.model.js';
 import Response from './src/models/review/response.model.js';
-import PriceRange from './src/models/review/price_range.js'; // Corrected path assumption
+import PriceRange from './src/models/review/price_range.js'; // --- REVERTED PATH TO MATCH USER'S FILE ---
 
 dotenv.config();
 
-// --- Configuration --- (Keep as before)
+// --- Configuration ---
 const MONGODB_URI = process.env.MONGODB_URI;
 const NUM_OWNERS = 15;
 const NUM_CUSTOMERS = 50;
@@ -27,8 +27,18 @@ const UPVOTE_CHANCE = 0.3;
 const RESPONSE_CHANCE = 0.2;
 const DEFAULT_PASSWORD = 'password123';
 const SALT_ROUNDS = 10;
+const CUSTOMER_PREFERENCE_CHANCE = 0.7;
 
-// --- Helper Functions --- (Keep as before)
+const melbourneAreaCoordinates = {
+    "Clayton": { lat: -37.9150, long: 145.1300 },
+    "Caulfield": { lat: -37.8769, long: 145.0449 },
+    "Parkville": { lat: -37.7900, long: 144.9500 },
+    "Melbourne CBD": { lat: -37.8150, long: 144.9640 }
+};
+const COORDINATE_OFFSET_MAX = 0.015;
+
+// --- Helper Functions ---
+// (generateOpeningHours, generateMenuItems, englishDescriptions, generateDealData remain unchanged)
 const generateOpeningHours = () => {
     const hours = {};
     const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -38,19 +48,17 @@ const generateOpeningHours = () => {
 
     days.forEach(day => {
         const isWeekend = day === 'sat' || day === 'sun';
-        const usuallyOpen = Math.random() > (isWeekend ? 0.3 : 0.05); // Higher chance closed on weekend
+        const usuallyOpen = Math.random() > (isWeekend ? 0.3 : 0.05);
 
         if (usuallyOpen) {
             const openTime = faker.helpers.arrayElement(typicalOpen);
             const closeTime = faker.helpers.arrayElement(isWeekend ? weekendClose : typicalClose);
-            // Ensure close time is after open time (simplified check)
             if (parseInt(closeTime.split(':')[0]) > parseInt(openTime.split(':')[0])) {
                 hours[day] = {
                     isOpen: true,
                     timeSlots: [{ open: openTime, close: closeTime }]
                 };
             } else {
-                 // Default if times are illogical or simple case
                  hours[day] = { isOpen: true, timeSlots: [{ open: '09:00', close: '17:00' }] };
             }
         } else {
@@ -74,13 +82,11 @@ const generateMenuItems = (cuisine) => {
         Australian: ['Chicken Parma', 'Fish and Chips', 'Steak', 'Burger with the Lot', 'Pavlova'],
         Pub: ['Burger', 'Steak Sandwich', 'Chicken Schnitzel', 'Wedges', 'Beer Battered Fries']
     };
-
-    const possibleItems = commonItems[cuisine] || commonItems['Cafe']; // Default to Cafe if cuisine not listed
-
+    const possibleItems = commonItems[cuisine] || commonItems['Cafe'];
     for (let i = 0; i < numItems; i++) {
         items.push({
             _id: new mongoose.Types.ObjectId(),
-            name: faker.helpers.arrayElement(possibleItems) + (Math.random() > 0.7 ? ` (${faker.lorem.words(1)})` : ''), // Add slight variation
+            name: faker.helpers.arrayElement(possibleItems) + (Math.random() > 0.7 ? ` (${faker.lorem.words(1)})` : ''),
             price: faker.number.float({ min: 5, max: 35, precision: 0.01 }),
             imageUrl: faker.image.urlLoremFlickr({ category: 'food', width: 300, height: 200 }),
         });
@@ -106,12 +112,11 @@ const englishDescriptions = [
 ];
 const generateDealData = (businessId, ownerId) => {
     const type = faker.helpers.arrayElement(['PERCENTAGE', 'FIXED_AMOUNT', 'BOGO', 'FREE_ITEM', 'SET_MENU']);
-    const startDate = faker.date.soon({ days: 30 }); // Start within next 30 days
-    const endDate = faker.date.future({ years: 0.5, refDate: startDate }); // End within 6 months after start
+    const startDate = faker.date.soon({ days: 30 });
+    const endDate = faker.date.future({ years: 0.5, refDate: startDate });
     let discountValue;
     let title = '';
     let appliesTo = '';
-
     switch (type) {
         case 'PERCENTAGE':
             discountValue = faker.helpers.arrayElement([10, 15, 20, 25, 50]);
@@ -126,7 +131,7 @@ const generateDealData = (businessId, ownerId) => {
         case 'BOGO':
             title = `Buy One Get One ${faker.helpers.arrayElement(['Coffee', 'Pizza Slice', 'Main Course', 'Dessert'])}`;
             appliesTo = faker.helpers.arrayElement(['Specific item', 'Items of equal or lesser value']);
-            discountValue = null; // No specific value needed for simple BOGO
+            discountValue = null;
             break;
         case 'FREE_ITEM':
             title = `Free ${faker.helpers.arrayElement(['Drink', 'Side Dish', 'Appetizer'])} with purchase over $${faker.helpers.arrayElement([20, 30, 40])}`;
@@ -136,13 +141,12 @@ const generateDealData = (businessId, ownerId) => {
         case 'SET_MENU':
             title = `${faker.helpers.arrayElement(['Lunch', 'Dinner', 'Express'])} Set Menu $${faker.helpers.arrayElement([25, 35, 45])}`;
             appliesTo = 'Set menu items only';
-            discountValue = faker.helpers.arrayElement([25, 35, 45]); // Store the set price here
+            discountValue = faker.helpers.arrayElement([25, 35, 45]);
             break;
         default:
             title = 'Special Offer';
             discountValue = null;
     }
-
     return {
         title: title,
         description: faker.lorem.sentence(),
@@ -150,7 +154,6 @@ const generateDealData = (businessId, ownerId) => {
         discountValue: discountValue,
         startDate: startDate,
         endDate: endDate,
-        // status will be set by pre-save hook based on dates
         redemptionInfo: faker.lorem.sentence(5),
         appliesTo: appliesTo,
         minimumSpend: type === 'FIXED_AMOUNT' ? faker.helpers.arrayElement([0, 25, 50]) : 0,
@@ -162,20 +165,28 @@ const generateReviewData = (customerId, businessId) => {
     const foodRating = faker.number.int({ min: 1, max: 5 });
     const serviceRating = faker.number.int({ min: 1, max: 5 });
     const ambienceRating = faker.number.int({ min: 1, max: 5 });
-    // Rating (average) will be calculated by pre-save hook
+
+    const reviewTitles = [
+        "Great Experience!", "Loved the food!", "Amazing Service", "Cozy Atmosphere",
+        "Highly Recommend", "A Must Try", "Decent Spot", "Could Be Better",
+        "Not Bad", "Fantastic Meal", "Wonderful Evening", "Delicious!",
+        "Best " + faker.commerce.productName() + " in town!",
+        "My new favorite " + faker.helpers.arrayElement(['cafe', 'restaurant', 'eatery']) + "!",
+        "A " + faker.word.adjective() + " surprise!",
+        "The " + faker.commerce.productAdjective() + " " + faker.commerce.productName() + " was " + faker.word.adjective() + "."
+    ];
 
     return {
+        title: faker.helpers.arrayElement(reviewTitles),
         text: faker.lorem.paragraphs(faker.number.int({ min: 1, max: 3 })),
         foodRating: foodRating,
         serviceRating: serviceRating,
         ambienceRating: ambienceRating,
-        // upvotes start at 0
         customerId: customerId,
         businessId: businessId,
-        images: Math.random() > 0.6 ? // ~40% chance of having images
+        images: Math.random() > 0.6 ?
             Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => faker.image.urlLoremFlickr({ category: 'food', width: 640, height: 480 }))
             : [],
-        // createdAt/updatedAt are handled by timestamps: true
     };
 };
 
@@ -194,101 +205,129 @@ const seedDatabase = async () => {
 
         // --- Clearing Existing Data ---
         console.log("--- Clearing Existing Data ---");
-        console.log("Deleting Responses...");
-        await Response.deleteMany({});
-        console.log("Deleting Review Upvotes...");
-        await ReviewUpvote.deleteMany({});
-        console.log("Deleting Reviews...");
-        await Review.deleteMany({});
-        console.log("Deleting Deals...");
-        await Deal.deleteMany({});
-        console.log("Deleting Businesses...");
-        await Business.deleteMany({});
-        console.log("Deleting Price Ranges...");
-        await PriceRange.deleteMany({});
-        console.log("Deleting Customers...");
-        await Customer.deleteMany({}); // Delete Customers
-        console.log("Deleting Owners...");
-        await Owner.deleteMany({});    // Delete Owners
-        // await User.deleteMany({}); // REMOVED User deletion
+        await Response.deleteMany({}); console.log("Responses deleted.");
+        await ReviewUpvote.deleteMany({}); console.log("Review Upvotes deleted.");
+        await Review.deleteMany({}); console.log("Reviews deleted.");
+        await Deal.deleteMany({}); console.log("Deals deleted.");
+        await Business.deleteMany({}); console.log("Businesses deleted.");
+        await PriceRange.deleteMany({}); console.log("Price Ranges deleted.");
+        await Customer.deleteMany({}); console.log("Customers deleted.");
+        await Owner.deleteMany({}); console.log("Owners deleted.");
         console.log("Existing data cleared.");
 
         console.log("--- Generating New Data ---");
 
         const hashedPassword = await bcrypt.hash(DEFAULT_PASSWORD, SALT_ROUNDS);
+        const cuisinesList = ['Cafe', 'Italian', 'Thai', 'Vietnamese', 'Indian', 'Chinese', 'Japanese', 'Mexican', 'Australian', 'Pub', 'Vegan', 'Seafood', 'Korean', 'Greek', 'Middle Eastern'];
 
-        // 1. Generate Owners (Standalone)
+        // 1. Generate Owners
         console.log("Generating Owners...");
         const ownersData = [];
         for (let i = 0; i < NUM_OWNERS; i++) {
             const firstName = faker.person.firstName();
             const lastName = faker.person.lastName();
             ownersData.push({
-                // Assuming Owner model now has email, password, fname, lname directly
                 email: faker.internet.email({ firstName, lastName, provider: `owner${i}.test` }),
                 password: hashedPassword,
                 fname: firstName,
                 lname: lastName,
                 profile_image: faker.image.avatar(),
-                // Add any other required fields from your Owner model
             });
         }
         const createdOwners = await Owner.insertMany(ownersData);
         console.log(`${createdOwners.length} owners inserted.`);
+        if (NUM_OWNERS > 0 && createdOwners.length === 0) {
+            throw new Error("CRITICAL: createdOwners array is empty after insertMany, despite NUM_OWNERS > 0. Check Owner model or DB connection during Owner insertion.");
+        }
 
-        // 2. Generate Customers (Standalone)
+
+        // 2. Generate Customers
         console.log("Generating Customers...");
         const customersData = [];
+        const melbourneSuburbsForPrefs = ["Clayton", "Caulfield", "Parkville", "Melbourne CBD", "South Yarra", "St Kilda", "Brunswick"];
         for (let i = 0; i < NUM_CUSTOMERS; i++) {
             const firstName = faker.person.firstName();
             const lastName = faker.person.lastName();
+            let preferredCuisines = [];
+            let preferredSuburb = null;
+            if (Math.random() < CUSTOMER_PREFERENCE_CHANCE) {
+                preferredCuisines = faker.helpers.arrayElements(cuisinesList, { min: 1, max: 3 });
+                if (Math.random() < 0.5) {
+                    preferredSuburb = faker.helpers.arrayElement(melbourneSuburbsForPrefs);
+                }
+            }
             customersData.push({
-                // Assuming Customer model now has email, password, name directly
                 email: faker.internet.email({ firstName, lastName, provider: `customer${i}.test` }),
                 password: hashedPassword,
                 name: `${firstName} ${lastName}`,
                 bio: faker.lorem.sentence(),
-                review_count: 0, // Start review count at 0
+                review_count: 0,
                 profile_image: faker.image.avatar(),
-                 // Add any other required fields from your Customer model
+                preferredCuisines: preferredCuisines,
+                preferredSuburb: preferredSuburb,
             });
         }
-        // *** CORRECTED VARIABLE NAME HERE ***
         const createdCustomers = await Customer.insertMany(customersData);
-        console.log(`${createdCustomers.length} customers inserted.`); // Corrected log message
+        console.log(`${createdCustomers.length} customers inserted.`);
+        if (NUM_CUSTOMERS > 0 && createdCustomers.length === 0) {
+            throw new Error("CRITICAL: createdCustomers array is empty after insertMany, despite NUM_CUSTOMERS > 0.");
+        }
 
 
-        // 3. Generate Price Ranges (Keep as before)
+        // 3. Generate Price Ranges
         console.log("Generating Price Ranges...");
         const priceRangesData = [
-            { lower_bound: 0, upper_bound: 20 },   // $
-            { lower_bound: 21, upper_bound: 40 },  // $$
-            { lower_bound: 41, upper_bound: 60 },  // $$$
-            { lower_bound: 61, upper_bound: 1000 } // $$$$
+            { lower_bound: 0, upper_bound: 20 },
+            { lower_bound: 21, upper_bound: 40 },
+            { lower_bound: 41, upper_bound: 60 },
+            { lower_bound: 61, upper_bound: 1000 }
         ];
         const createdPriceRanges = await PriceRange.insertMany(priceRangesData);
         console.log(`${createdPriceRanges.length} price ranges inserted.`);
+        if (priceRangesData.length > 0 && createdPriceRanges.length === 0) {
+            throw new Error("CRITICAL: createdPriceRanges array is empty after insertMany, despite priceRangesData having items.");
+        }
 
-        // 4. Generate Businesses (Keep as before, uses createdOwners)
+
+        // 4. Generate Businesses
         console.log("Generating Businesses...");
         const businessesData = [];
         const numBusinesses = faker.number.int({ min: NUM_BUSINESSES_MIN, max: NUM_BUSINESSES_MAX });
-        const cuisinesList = ['Cafe', 'Italian', 'Thai', 'Vietnamese', 'Indian', 'Chinese', 'Japanese', 'Mexican', 'Australian', 'Pub', 'Vegan', 'Seafood'];
-        const melbourneLocations = [
-             { area: "Clayton", postcode: "3168", vicinity: ["Clayton Rd", "Centre Rd", "Monash Uni Campus"] },
-             { area: "Caulfield", postcode: "3162", vicinity: ["Derby Rd", "Sir John Monash Dr", "Caulfield East"] },
-             { area: "Parkville", postcode: "3052", vicinity: ["Royal Parade", "Grattan St", "Near UniMelb"] },
-             { area: "Melbourne CBD", postcode: "3000", vicinity: ["Collins St", "Bourke St", "Flinders Ln"] },
+        const melbourneLocationsForBusiness = [
+            { area: "Clayton", postcode: "3168", vicinity: ["Clayton Rd", "Centre Rd", "Monash Uni Campus"] },
+            { area: "Caulfield", postcode: "3162", vicinity: ["Derby Rd", "Sir John Monash Dr", "Caulfield East"] },
+            { area: "Parkville", postcode: "3052", vicinity: ["Royal Parade", "Grattan St", "Near UniMelb"] },
+            { area: "Melbourne CBD", postcode: "3000", vicinity: ["Collins St", "Bourke St", "Flinders Ln"] },
         ];
 
+        if (NUM_OWNERS > 0 && (!createdOwners || createdOwners.length === 0)) {
+             throw new Error("Cannot generate businesses: createdOwners is empty.");
+        }
+        if (priceRangesData.length > 0 && (!createdPriceRanges || createdPriceRanges.length === 0)) {
+             throw new Error("Cannot generate businesses: createdPriceRanges is empty.");
+        }
+
+
         for (let i = 0; i < numBusinesses; i++) {
-            const owner = faker.helpers.arrayElement(createdOwners); // Use created Owner documents
-            const locationInfo = faker.helpers.arrayElement(melbourneLocations);
+            const owner = (createdOwners && createdOwners.length > 0) ? faker.helpers.arrayElement(createdOwners) : null;
+            if (!owner && NUM_OWNERS > 0) throw new Error("Owner is null or undefined in business generation loop, but owners should exist.");
+
+            const locationInfo = faker.helpers.arrayElement(melbourneLocationsForBusiness);
+
             const businessName = faker.company.name() + (Math.random() > 0.5 ? ` ${faker.helpers.arrayElement(['Eatery', 'Cafe', 'Bistro', 'Kitchen', 'Bar', 'Grill', 'House'])}` : '');
+
             const selectedCuisines = faker.helpers.arrayElements(cuisinesList, { min: 1, max: 3 });
-            const selectedPriceRange = faker.helpers.arrayElement(createdPriceRanges);
+
+            const selectedPriceRange = (createdPriceRanges && createdPriceRanges.length > 0) ? faker.helpers.arrayElement(createdPriceRanges) : null;
+            if (!selectedPriceRange && priceRangesData.length > 0) throw new Error("selectedPriceRange is null or undefined, but price ranges should exist.");
+
+
             const domainName = businessName.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 15) || faker.lorem.slug(2);
             const websiteUrl = `https://www.${domainName}.com.au`;
+
+            const baseCoords = melbourneAreaCoordinates[locationInfo.area];
+            const longitude = baseCoords.long + (Math.random() - 0.5) * COORDINATE_OFFSET_MAX * 2;
+            const latitude = baseCoords.lat + (Math.random() - 0.5) * COORDINATE_OFFSET_MAX * 2;
 
             businessesData.push({
                 name: businessName,
@@ -296,11 +335,12 @@ const seedDatabase = async () => {
                 email: faker.internet.email({ firstName: owner.fname.toLowerCase(), provider: `${domainName}.test` }),
                 phone: faker.phone.number('039#######'),
                 address: `${faker.location.streetAddress(true)}, ${locationInfo.area}, VIC ${locationInfo.postcode}`,
+                location: { type: 'Point', coordinates: [longitude, latitude] },
                 rating: 0, foodRating: 0, serviceRating: 0, ambienceRating: 0, review_count: 0,
                 website: websiteUrl,
                 imageUrl: faker.image.urlLoremFlickr({ category: 'restaurant', width: 640, height: 480 }),
                 images: Array.from({ length: faker.number.int({ min: 2, max: 5 }) }, () => faker.image.urlLoremFlickr({ category: 'food', width: 640, height: 480 })),
-                owner_id: owner._id, // Link to the created Owner ID
+                owner_id: owner._id,
                 price_range_id: selectedPriceRange._id,
                 menuItems: generateMenuItems(selectedCuisines[0]),
                 cuisines: selectedCuisines,
@@ -310,7 +350,7 @@ const seedDatabase = async () => {
         const createdBusinesses = await Business.insertMany(businessesData);
         console.log(`${createdBusinesses.length} businesses inserted.`);
 
-        // 5. Generate Reviews (Uses createdCustomers - now correctly defined)
+        // 5. Generate Reviews
         console.log("Generating Reviews...");
         const reviewsData = [];
         const businessReviewCounts = {};
@@ -318,11 +358,11 @@ const seedDatabase = async () => {
 
         for (const business of createdBusinesses) {
             const numReviews = faker.number.int({ min: 0, max: NUM_REVIEWS_PER_BUSINESS_MAX });
-            const potentialReviewers = faker.helpers.shuffle([...createdCustomers]); // Uses createdCustomers
+            const potentialReviewers = faker.helpers.shuffle([...createdCustomers]);
 
             for (let i = 0; i < numReviews && i < potentialReviewers.length; i++) {
                 const customer = potentialReviewers[i];
-                reviewsData.push(generateReviewData(customer._id, business._id)); // Use Customer ID
+                reviewsData.push(generateReviewData(customer._id, business._id));
                 businessReviewCounts[business._id] = (businessReviewCounts[business._id] || 0) + 1;
                 customerReviewCounts[customer._id] = (customerReviewCounts[customer._id] || 0) + 1;
             }
@@ -330,44 +370,33 @@ const seedDatabase = async () => {
         const createdReviews = await Review.insertMany(reviewsData);
         console.log(`${createdReviews.length} reviews inserted.`);
 
+        // 6. Update Business and Customer Review Counts and Ratings
         console.log("Updating Business review counts and average ratings...");
         const businessUpdatePromises = createdBusinesses.map(async (business) => {
              const reviewsForBusiness = createdReviews.filter(r => r.businessId.equals(business._id));
              const reviewCount = reviewsForBusiness.length;
-
              if (reviewCount > 0) {
-                 // Calculate sums safely, defaulting to 0 if a rating is missing/invalid
                  const totalFood = reviewsForBusiness.reduce((sum, r) => sum + (Number(r.foodRating) || 0), 0);
                  const totalService = reviewsForBusiness.reduce((sum, r) => sum + (Number(r.serviceRating) || 0), 0);
                  const totalAmbience = reviewsForBusiness.reduce((sum, r) => sum + (Number(r.ambienceRating) || 0), 0);
-
-                 // Calculate component averages
                  const avgFood = totalFood / reviewCount;
                  const avgService = totalService / reviewCount;
                  const avgAmbience = totalAmbience / reviewCount;
-
-                 // --- CORRECTED OVERALL RATING CALCULATION ---
-                 // Calculate the overall business rating as the average of the component averages
                  const avgRating = (avgFood + avgService + avgAmbience) / 3;
-                 // --- END CORRECTION ---
-
                  await Business.findByIdAndUpdate(business._id, {
                      review_count: reviewCount,
-                     // Assign the correctly calculated averages
                      rating: avgRating,
                      foodRating: avgFood,
                      serviceRating: avgService,
                      ambienceRating: avgAmbience,
                  });
              }
-             // If reviewCount is 0, the business keeps its initial 0 ratings.
          });
         await Promise.all(businessUpdatePromises);
         console.log("Business review counts updated.");
 
-        // --- Update Customer Review Counts (Keep as before) ---
         console.log("Updating Customer review counts...");
-        const customerUpdatePromises = createdCustomers.map(async (customer) => {
+         const customerUpdatePromises = createdCustomers.map(async (customer) => {
              const count = customerReviewCounts[customer._id] || 0;
              if (count > 0) {
                 await Customer.findByIdAndUpdate(customer._id, { review_count: count });
@@ -376,7 +405,7 @@ const seedDatabase = async () => {
          await Promise.all(customerUpdatePromises);
         console.log("Customer review counts updated.");
 
-        // 7. Generate Deals (Keep as before)
+        // 7. Generate Deals
         console.log("Generating Deals...");
         const dealsData = [];
         for (const business of createdBusinesses) {
@@ -388,51 +417,56 @@ const seedDatabase = async () => {
         const createdDeals = await Deal.insertMany(dealsData);
         console.log(`${createdDeals.length} deals inserted.`);
 
-        // 8. Generate Review Upvotes (Uses createdCustomers - now correctly defined)
+        // 8. Generate Review Upvotes --- MODIFIED SECTION ---
         console.log("Generating Review Upvotes...");
         const upvotesData = [];
-        const upvotedPairs = new Set();
+        const upvotedPairs = new Set(); // To avoid duplicate upvotes from the same customer for the same review
 
-        const allPotentialUpvoters = [
-            ...createdCustomers.map(c => ({ id: c._id, type: 'Customer' })), // Uses createdCustomers
-            ...createdOwners.map(o => ({ id: o._id, type: 'Owner' }))
-        ];
-
-        if (createdReviews.length > 0 && allPotentialUpvoters.length > 0) {
+        if (createdReviews.length > 0 && createdCustomers.length > 0) { // Ensure there are customers to upvote
             for (const review of createdReviews) {
-                 const shuffledUpvoters = faker.helpers.shuffle(allPotentialUpvoters);
-                 for (const upvoter of shuffledUpvoters) {
-                    if (upvoter.type === 'Customer' && upvoter.id.equals(review.customerId)) {
+                 // Only customers can upvote, according to ReviewUpvote schema
+                 const potentialCustomerUpvoters = faker.helpers.shuffle([...createdCustomers]);
+
+                 for (const customer of potentialCustomerUpvoters) {
+                    // A customer cannot upvote their own review
+                    if (customer._id.equals(review.customerId)) {
                         continue;
                     }
+
+                    // Random chance for this customer to upvote this review
                     if (Math.random() < UPVOTE_CHANCE) {
-                        const upvoterId = upvoter.id;
-                        const pairKey = `${upvoterId}-${review._id}`;
+                        const pairKey = `${customer._id}-${review._id}`;
                         if (!upvotedPairs.has(pairKey)) {
                              upvotesData.push({
-                                review_id: review._id,
-                                user_id: upvoterId,
+                                reviewId: review._id,     // Corrected: schema expects reviewId
+                                customerId: customer._id, // Corrected: schema expects customerId
                              });
                              upvotedPairs.add(pairKey);
                         }
+                        // Limit upvotes per review slightly to make it more realistic
+                        // (e.g., not every customer upvotes every review they didn't write)
                         if (Math.random() > 0.7) break;
                     }
                  }
             }
-            await ReviewUpvote.insertMany(upvotesData);
-            console.log(`${upvotesData.length} review upvotes potentially added (duplicates skipped).`);
+            if (upvotesData.length > 0) {
+                await ReviewUpvote.insertMany(upvotesData);
+            }
+            console.log(`${upvotesData.length} review upvotes added.`);
         } else {
-             console.log("Skipping upvotes (no reviews or potential upvoters).")
+             console.log("Skipping upvotes (no reviews or no customers to upvote).")
         }
+        // --- END MODIFIED SECTION ---
 
-        // 9. Generate Responses (Keep as before)
+
+        // 9. Generate Responses
         console.log("Generating Responses...");
         const responsesData = [];
         if (createdReviews.length > 0) {
             for (const review of createdReviews) {
                 if (Math.random() < RESPONSE_CHANCE) {
                     responsesData.push({
-                        review_id: review._id,
+                        review_id: review._id, // Schema for Response uses review_id
                         text: faker.lorem.sentence(faker.number.int({ min: 10, max: 30 })),
                     });
                 }
@@ -448,7 +482,7 @@ const seedDatabase = async () => {
 
     } catch (error) {
         console.error("--- Error during seeding ---");
-        console.error(error);
+        console.error(error); // Log the full error object
         process.exit(1);
     } finally {
         console.log("Closing MongoDB connection...");

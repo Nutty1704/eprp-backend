@@ -33,6 +33,17 @@ const businessSchema = new mongoose.Schema({
     email: { type: String, default: "" },
     phone: { type: String, default: "" },
     address: { type: String, required: true },
+    location: {
+      type: {
+          type: String,
+          enum: ['Point'], // Only 'Point' type for coordinates
+          // required: true // Make required once geocoding is implemented
+      },
+      coordinates: {
+          type: [Number], // Array of [longitude, latitude]
+          // required: true // Make required once geocoding is implemented
+      }
+  },
     rating: { type: Number, default: 0 },
     foodRating: { type: Number, default: 0 },
     serviceRating: { type: Number, default: 0 },
@@ -64,8 +75,12 @@ const businessSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
-businessSchema.index({ owner: 1 });
-businessSchema.index({ name: 1, owner: 1 }, { unique: true });
+// Geospatial index for location-based queries
+// This MUST be created after you start populating the 'location.coordinates' field.
+businessSchema.index({ location: '2dsphere' });
+
+businessSchema.index({ owner_id: 1 }); // Changed from 'owner' to 'owner_id'
+businessSchema.index({ name: 1, owner_id: 1 }, { unique: true });
 
 // Pre-save middleware to sync name and businessName
 businessSchema.pre('save', function(next) {

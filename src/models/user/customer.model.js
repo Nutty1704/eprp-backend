@@ -34,6 +34,15 @@ const customerSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    preferredCuisines: {
+        type: [String], 
+        default: [],
+    },
+    preferredSuburb: { 
+        type: String,
+        trim: true,
+        default: null,
+    },
 }, { timestamps: true });
 
 
