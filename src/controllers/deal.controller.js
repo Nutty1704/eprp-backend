@@ -159,10 +159,34 @@ export const deleteDeal = async (req, res) => {
     }
 };
 
+export const getActivePublicDeals = async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10; // Default to 10 deals
+        const now = new Date();
+
+        // Find deals that are ACTIVE, have started, and not yet ended
+        const deals = await Deal.find({
+            status: 'ACTIVE',
+            startDate: { $lte: now },
+            endDate: { $gte: now }
+        })
+        .sort({ createdAt: -1 }) // Show newest deals first
+        .limit(limit)
+        .populate('business_id', 'name'); // Populate only the name of the business
+
+        res.status(200).json(deals);
+
+    } catch (error) {
+        console.error("Error fetching active public deals:", error);
+        res.status(500).json({ message: "Error fetching active public deals", error: error.message });
+    }
+};
+
 export default {
     createDeal,
     getDealsForBusiness,
     getMyDeals,
     updateDeal,
-    deleteDeal
+    deleteDeal,
+    getActivePublicDeals
 };

@@ -106,56 +106,91 @@ const englishDescriptions = [
 ];
 const generateDealData = (businessId, ownerId) => {
     const type = faker.helpers.arrayElement(['PERCENTAGE', 'FIXED_AMOUNT', 'BOGO', 'FREE_ITEM', 'SET_MENU']);
-    const startDate = faker.date.soon({ days: 30 }); // Start within next 30 days
-    const endDate = faker.date.future({ years: 0.5, refDate: startDate }); // End within 6 months after start
+    const daysInPast = faker.number.int({ min: 0, max: 7 }); // 0 for today, up to 7 days ago
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysInPast);
+    // Optional: Set time to the beginning of the day for consistency
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = faker.date.future({ years: 0.5, refDate: startDate });
+    // Optional: Set time to the end of the day for consistency
+    endDate.setHours(23, 59, 59, 999);
+
     let discountValue;
     let title = '';
     let appliesTo = '';
+    let description = faker.lorem.sentence({ min: 7, max: 20 }); // Slightly longer description
+    let promoCode = null; // Initialize promoCode
 
     switch (type) {
         case 'PERCENTAGE':
             discountValue = faker.helpers.arrayElement([10, 15, 20, 25, 50]);
-            title = `${discountValue}% Off ${faker.helpers.arrayElement(['Lunch', 'Dinner', 'Your Order', 'Weekends'])}`;
-            appliesTo = faker.helpers.arrayElement(['Entire bill', 'Food items only', 'Specific menu section']);
+            title = `${discountValue}% Off ${faker.helpers.arrayElement(['Lunch Specials', 'Dinner Menu', 'Your Entire Order', 'Weekend Brunches'])}`;
+            appliesTo = faker.helpers.arrayElement(['Entire bill', 'Food items only', 'Dine-in orders', 'Online orders']);
+            promoCode = `${faker.lorem.word().toUpperCase()}${discountValue}`;
             break;
         case 'FIXED_AMOUNT':
             discountValue = faker.helpers.arrayElement([5, 10, 15, 20]);
-            title = `$${discountValue} Off ${faker.helpers.arrayElement(['Orders over $50', 'Your Next Visit', 'Takeaway'])}`;
-            appliesTo = 'Total bill';
+            title = `$${discountValue} Off ${faker.helpers.arrayElement(['Orders Over $'+(discountValue*3), 'Your Next Visit', 'Takeaway Orders'])}`;
+            appliesTo = `Total bill when you spend $${discountValue*2.5} or more`;
+            promoCode = `GET${discountValue}OFF`;
             break;
         case 'BOGO':
-            title = `Buy One Get One ${faker.helpers.arrayElement(['Coffee', 'Pizza Slice', 'Main Course', 'Dessert'])}`;
-            appliesTo = faker.helpers.arrayElement(['Specific item', 'Items of equal or lesser value']);
+            const bogoItem = faker.helpers.arrayElement(['Coffee', 'Pizza Slice', 'Main Course', 'Dessert', 'Appetizer']);
+            title = `Buy One Get One Free: ${bogoItem}`;
+            appliesTo = `Selected ${bogoItem}s. Lesser value item free.`;
             discountValue = null; // No specific value needed for simple BOGO
             break;
         case 'FREE_ITEM':
-            title = `Free ${faker.helpers.arrayElement(['Drink', 'Side Dish', 'Appetizer'])} with purchase over $${faker.helpers.arrayElement([20, 30, 40])}`;
-            appliesTo = 'With qualifying purchase';
+            const freeItem = faker.helpers.arrayElement(['Soft Drink', 'Side Salad', 'Garlic Bread', 'Cupcake']);
+            const minSpendFreeItem = faker.helpers.arrayElement([20, 30, 40]);
+            title = `Free ${freeItem} with purchase over $${minSpendFreeItem}`;
+            appliesTo = `With any qualifying purchase of $${minSpendFreeItem} or more.`;
             discountValue = null;
             break;
         case 'SET_MENU':
-            title = `${faker.helpers.arrayElement(['Lunch', 'Dinner', 'Express'])} Set Menu $${faker.helpers.arrayElement([25, 35, 45])}`;
-            appliesTo = 'Set menu items only';
-            discountValue = faker.helpers.arrayElement([25, 35, 45]); // Store the set price here
+            const setMenuPrice = faker.helpers.arrayElement([25.99, 35.50, 49.00]);
+            title = `${faker.helpers.arrayElement(['Executive Lunch', 'Romantic Dinner', 'Express'])} Set Menu for $${setMenuPrice}`;
+            appliesTo = 'Includes 2 courses and a drink. See menu for details.';
+            discountValue = setMenuPrice; // Store the set price here
             break;
         default:
-            title = 'Special Offer';
+            title = 'Exclusive Special Offer';
             discountValue = null;
+            description = "Check out this amazing limited-time offer!";
     }
+
+    // --- EXPLICITLY DETERMINE AND SET STATUS ---
+    let currentStatus;
+    const now = new Date();
+
+    if (endDate < now) {
+        currentStatus = 'EXPIRED';
+    } else if (startDate <= now && endDate >= now) {
+        currentStatus = 'ACTIVE';
+    } else if (startDate > now) {
+        currentStatus = 'SCHEDULED';
+    } else {
+        // Fallback or edge case, though above conditions should cover most.
+        // This might happen if dates are invalid, though faker should provide valid ones.
+        currentStatus = 'INACTIVE'; // Or 'SCHEDULED' as a safer default
+    }
+    // --- END EXPLICIT STATUS SETTING ---
 
     return {
         title: title,
-        description: faker.lorem.sentence(),
+        description: description,
         type: type,
-        discountValue: discountValue,
+        discountValue: discountValue, // Will be null for some types, ensure schema allows
         startDate: startDate,
         endDate: endDate,
-        // status will be set by pre-save hook based on dates
-        redemptionInfo: faker.lorem.sentence(5),
+        status: currentStatus, // Use the explicitly determined status
+        redemptionInfo: faker.lorem.sentence(faker.number.int({min: 5, max: 10})),
         appliesTo: appliesTo,
-        minimumSpend: type === 'FIXED_AMOUNT' ? faker.helpers.arrayElement([0, 25, 50]) : 0,
-        business_id: businessId,
-        owner_id: ownerId,
+        minimumSpend: type === 'FIXED_AMOUNT' ? (discountValue * 2.5) : (type === 'FREE_ITEM' ? faker.helpers.arrayElement([20, 30, 40]) : 0),
+        business_id: businessId, // Make sure businessId is a valid ObjectId
+        owner_id: ownerId,       // Make sure owner_id is a valid ObjectId
+        promoCode: promoCode,    // Add promoCode if generated
     };
 };
 const generateReviewData = (customerId, businessId) => {

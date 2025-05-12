@@ -18,4 +18,8 @@ router.put('/:dealId', isOwner, dealController.updateDeal);
 // DELETE /api/deals/:dealId - Delete a specific deal
 router.delete('/:dealId', isOwner, dealController.deleteDeal);
 
+// --- Public Routes ---
+// GET /api/deals/public/active - Get active public deals for homepage, etc.
+router.get('/public/active', dealController.getActivePublicDeals);
+
 export default router;
