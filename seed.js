@@ -162,20 +162,28 @@ const generateReviewData = (customerId, businessId) => {
     const foodRating = faker.number.int({ min: 1, max: 5 });
     const serviceRating = faker.number.int({ min: 1, max: 5 });
     const ambienceRating = faker.number.int({ min: 1, max: 5 });
-    // Rating (average) will be calculated by pre-save hook
+
+    const reviewTitles = [
+        "Great Experience!", "Loved the food!", "Amazing Service", "Cozy Atmosphere",
+        "Highly Recommend", "A Must Try", "Decent Spot", "Could Be Better",
+        "Not Bad", "Fantastic Meal", "Wonderful Evening", "Delicious!",
+        "Best " + faker.commerce.productName() + " in town!",
+        "My new favorite " + faker.helpers.arrayElement(['cafe', 'restaurant', 'eatery']) + "!",
+        "A " + faker.word.adjective() + " surprise!",
+        "The " + faker.commerce.productAdjective() + " " + faker.commerce.productName() + " was " + faker.word.adjective() + "."
+    ];
 
     return {
+        title: faker.helpers.arrayElement(reviewTitles),
         text: faker.lorem.paragraphs(faker.number.int({ min: 1, max: 3 })),
         foodRating: foodRating,
         serviceRating: serviceRating,
         ambienceRating: ambienceRating,
-        // upvotes start at 0
         customerId: customerId,
         businessId: businessId,
-        images: Math.random() > 0.6 ? // ~40% chance of having images
+        images: Math.random() > 0.6 ?
             Array.from({ length: faker.number.int({ min: 1, max: 3 }) }, () => faker.image.urlLoremFlickr({ category: 'food', width: 640, height: 480 }))
             : [],
-        // createdAt/updatedAt are handled by timestamps: true
     };
 };
 
@@ -391,38 +399,41 @@ const seedDatabase = async () => {
         // 8. Generate Review Upvotes (Uses createdCustomers - now correctly defined)
         console.log("Generating Review Upvotes...");
         const upvotesData = [];
-        const upvotedPairs = new Set();
+        const upvotedPairs = new Set(); // To avoid duplicate upvotes from the same customer for the same review
 
-        const allPotentialUpvoters = [
-            ...createdCustomers.map(c => ({ id: c._id, type: 'Customer' })), // Uses createdCustomers
-            ...createdOwners.map(o => ({ id: o._id, type: 'Owner' }))
-        ];
-
-        if (createdReviews.length > 0 && allPotentialUpvoters.length > 0) {
+        if (createdReviews.length > 0 && createdCustomers.length > 0) { // Ensure there are customers to upvote
             for (const review of createdReviews) {
-                 const shuffledUpvoters = faker.helpers.shuffle(allPotentialUpvoters);
-                 for (const upvoter of shuffledUpvoters) {
-                    if (upvoter.type === 'Customer' && upvoter.id.equals(review.customerId)) {
+                 // Only customers can upvote, according to ReviewUpvote schema
+                 const potentialCustomerUpvoters = faker.helpers.shuffle([...createdCustomers]);
+
+                 for (const customer of potentialCustomerUpvoters) {
+                    // A customer cannot upvote their own review
+                    if (customer._id.equals(review.customerId)) {
                         continue;
                     }
+
+                    // Random chance for this customer to upvote this review
                     if (Math.random() < UPVOTE_CHANCE) {
-                        const upvoterId = upvoter.id;
-                        const pairKey = `${upvoterId}-${review._id}`;
+                        const pairKey = `${customer._id}-${review._id}`;
                         if (!upvotedPairs.has(pairKey)) {
                              upvotesData.push({
-                                review_id: review._id,
-                                user_id: upvoterId,
+                                reviewId: review._id,     // Corrected: schema expects reviewId
+                                customerId: customer._id, // Corrected: schema expects customerId
                              });
                              upvotedPairs.add(pairKey);
                         }
+                        // Limit upvotes per review slightly to make it more realistic
+                        // (e.g., not every customer upvotes every review they didn't write)
                         if (Math.random() > 0.7) break;
                     }
                  }
             }
-            await ReviewUpvote.insertMany(upvotesData);
-            console.log(`${upvotesData.length} review upvotes potentially added (duplicates skipped).`);
+            if (upvotesData.length > 0) {
+                await ReviewUpvote.insertMany(upvotesData);
+            }
+            console.log(`${upvotesData.length} review upvotes added.`);
         } else {
-             console.log("Skipping upvotes (no reviews or potential upvoters).")
+             console.log("Skipping upvotes (no reviews or no customers to upvote).")
         }
 
         // 9. Generate Responses (Keep as before)
