@@ -12,6 +12,9 @@ router.post('/', isOwner, dealController.createDeal);
 // GET /api/deals/my - Get all deals for the logged-in owner
 router.get('/my', isOwner, dealController.getMyDeals);
 
+// GET /api/deals/business/:businessId - Get all deals for a specific business
+router.get('/business/:businessId', isOwner, dealController.getDealsForBusiness);
+
 // PUT /api/deals/:dealId - Update a specific deal
 router.put('/:dealId', isOwner, dealController.updateDeal);
 
