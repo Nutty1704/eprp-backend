@@ -1,3 +1,8 @@
 .env
 node_modules
-Test
+
+# Editor files
+.vscode/
+
+# OS Junk
+.DS_Store
