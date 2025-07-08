@@ -386,6 +386,10 @@ const uploadImage = async (file) => {
   const dataURI = `data:${file.mimetype};base64,${base64Image}`;
 
   const uploadResponse = await cloudinary.v2.uploader.upload(dataURI);
+
+  // Delete the temporary file
+  fs.unlinkSync(file.path);
+
   return uploadResponse.url;
 };
 
